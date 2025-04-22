@@ -3,6 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 import 'package:permission_handler/permission_handler.dart';
 
+sortByFileName(String selectedDirectory) async {
+  late File? photo;
+  final Directory unsortedDir = await getUnsortedDir(selectedDirectory);
+  await movePhotosToUnsorted(selectedDirectory, unsortedDir);
+  for (var entity in unsortedDir.listSync(followLinks: false)) {
+    photo = await findOldestPhotoByFilename(unsortedDir);
+    moveFileToDirectory(photo!, selectedDirectory);
+  }
+}
+
 Future<bool> requestAllStoragePermissions() async {
   bool granted = true;
 
@@ -57,21 +67,26 @@ Future<bool> requestAllStoragePermissions() async {
   return granted;
 }
 
-Future<void> movePhotosToUnsorted(String imgPath) async {
+Future<Directory> getUnsortedDir(String imgPath) async {
   requestAllStoragePermissions();
   final sourceDir = Directory(imgPath);
 
   if (!await sourceDir.exists()) {
-    return;
+    throw Exception('Source directory does not exist: $imgPath');
   }
 
-  final unsortedDir = Directory(path.join(imgPath, 'unsorted'));
+  return Directory(path.join(imgPath, 'unsorted'));
+}
 
+Future<void> movePhotosToUnsorted(
+  String sourceDir,
+  Directory unsortedDir,
+) async {
   if (!await unsortedDir.exists()) {
     await unsortedDir.create();
   }
   final imageExtensions = ['.jpg', '.jpeg', '.png', '.heic', '.webp'];
-  final files = sourceDir.listSync().whereType<File>();
+  final files = Directory(sourceDir).listSync().whereType<File>();
 
   for (final file in files) {
     final ext = path.extension(file.path).toLowerCase();
@@ -84,5 +99,59 @@ Future<void> movePhotosToUnsorted(String imgPath) async {
         debugPrint('Failed to move ${file.path}: $e');
       }
     }
+  }
+}
+
+DateTime? extractTimestampFromFilename(String filename) {
+  final regex = RegExp(r'IMG_(\d{8})_(\d{6})');
+  final match = regex.firstMatch(filename);
+  if (match != null) {
+    final datePart = match.group(1)!;
+    final timePart = match.group(2)!;
+
+    final year = int.parse(datePart.substring(0, 4));
+    final month = int.parse(datePart.substring(4, 6));
+    final day = int.parse(datePart.substring(6, 8));
+    final hour = int.parse(timePart.substring(0, 2));
+    final minute = int.parse(timePart.substring(2, 4));
+    final second = int.parse(timePart.substring(4, 6));
+
+    return DateTime(year, month, day, hour, minute, second);
+  }
+  return null;
+}
+
+Future<File?> findOldestPhotoByFilename(Directory dirc) async {
+  final Directory dir = Directory(dirc.path);
+  if (!await dir.exists()) return null;
+
+  File? oldestFile;
+  DateTime? oldestTime;
+
+  for (var entity in dir.listSync(followLinks: false)) {
+    if (entity is File && entity.path.contains('/unsorted/')) {
+      final filename = path.basename(entity.path);
+      final timestamp = extractTimestampFromFilename(filename);
+
+      if (timestamp != null) {
+        if (oldestTime == null || timestamp.isBefore(oldestTime)) {
+          oldestTime = timestamp;
+          oldestFile = entity;
+        }
+      }
+    }
+  }
+  return oldestFile;
+}
+
+Future<void> moveFileToDirectory(File file, String targetDirectoryPath) async {
+  final targetDir = Directory(targetDirectoryPath);
+  final newPath = path.join(targetDir.path, path.basename(file.path));
+
+  try {
+    await file.rename(newPath);
+    debugPrint('File moved to: $newPath');
+  } catch (e) {
+    debugPrint('Error moving file: $e');
   }
 }

@@ -154,7 +154,7 @@ class _PhotoSorterHomeState extends State<PhotoSorterHome> {
               ),
               const SizedBox(height: 10),
               FilledButton.tonal(
-                onPressed: () => movePhotosToUnsorted(selectedDirectory!),
+                onPressed: () => sortByFileName(selectedDirectory!),
                 child: const Text('Start Processing'),
               ),
               const SizedBox(height: 20),
