@@ -38,7 +38,7 @@ class _PhotoSorterHomeState extends State<PhotoSorterHome> {
   int sortedFiles = 0;
   int unsortedFiles = 0;
   String currentAction = "";
-  bool sortByName = true;
+  bool sortByCreationDate = true;
 
   Future<void> selectFolder() async {
     String? selectedDir = await FilePicker.platform.getDirectoryPath();
@@ -84,7 +84,7 @@ class _PhotoSorterHomeState extends State<PhotoSorterHome> {
                       '2. All images will be moved to an "unsorted" subfolder',
                     ),
                     Text(
-                      '3. Images will be sorted by date from filename or creation date',
+                      '3. Images will be sorted by date from creation date or filename',
                     ),
                     Text(
                       '4. Sorted images will be moved back to the original folder',
@@ -112,23 +112,30 @@ class _PhotoSorterHomeState extends State<PhotoSorterHome> {
                       Column(
                         children: [
                           RadioListTile<bool>(
-                            title: const Text('Sort by Filename'),
+                            title: const Text('Sort by Creation Date'),
                             value: true,
-                            groupValue: sortByName,
+                            groupValue: sortByCreationDate,
                             onChanged:
                                 isProcessing
                                     ? null
                                     : (value) {
                                       setState(() {
-                                        sortByName = value!;
+                                        sortByCreationDate = value!;
                                       });
                                     },
                           ),
                           RadioListTile<bool>(
-                            title: const Text('Sort by Creation Date'),
+                            title: const Text('Sort by Filename'),
                             value: false,
-                            groupValue: sortByName,
-                            onChanged: null,
+                            groupValue: sortByCreationDate,
+                            onChanged:
+                                isProcessing
+                                    ? null
+                                    : (value) {
+                                      setState(() {
+                                        sortByCreationDate = value!;
+                                      });
+                                    },
                           ),
                         ],
                       ),
@@ -155,7 +162,10 @@ class _PhotoSorterHomeState extends State<PhotoSorterHome> {
                                 content: Text('Please select a directory'),
                               ),
                             )
-                            : sortByFileName(selectedDirectory!),
+                            : sortImages(
+                              selectedDirectory: selectedDirectory!,
+                              useCreationDate: sortByCreationDate,
+                            ),
                 child: const Text('Start Processing'),
               ),
               const SizedBox(height: 20),

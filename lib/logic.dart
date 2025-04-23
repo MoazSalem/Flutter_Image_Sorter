@@ -3,12 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 import 'package:permission_handler/permission_handler.dart';
 
-sortByFileName(String selectedDirectory) async {
+sortImages({
+  required String selectedDirectory,
+  required bool useCreationDate,
+}) async {
   late File? photo;
   final Directory unsortedDir = await getUnsortedDir(selectedDirectory);
   await movePhotosToUnsorted(selectedDirectory, unsortedDir);
   for (var entity in unsortedDir.listSync(followLinks: false)) {
-    photo = await findOldestPhotoByFilename(unsortedDir);
+    photo = await findOldestPhoto(unsortedDir, useCreationDate: true);
     await moveFileToDirectory(photo!, selectedDirectory);
     await touchFile(
       path.join(Directory(selectedDirectory).path, path.basename(photo!.path)),
@@ -124,7 +127,10 @@ DateTime? extractTimestampFromFilename(String filename) {
   return null;
 }
 
-Future<File?> findOldestPhotoByFilename(Directory dirc) async {
+Future<File?> findOldestPhoto(
+  Directory dirc, {
+  bool useCreationDate = false,
+}) async {
   final Directory dir = Directory(dirc.path);
   if (!await dir.exists()) return null;
 
@@ -133,8 +139,18 @@ Future<File?> findOldestPhotoByFilename(Directory dirc) async {
 
   for (var entity in dir.listSync(followLinks: false)) {
     if (entity is File) {
-      final filename = path.basename(entity.path);
-      final timestamp = extractTimestampFromFilename(filename);
+      DateTime? timestamp;
+
+      if (useCreationDate) {
+        // Get timestamp from file creation date
+        final FileStat stats = await entity.stat();
+        timestamp = stats.changed;
+      } else {
+        // Get timestamp from filename
+        final filename = path.basename(entity.path);
+        timestamp = extractTimestampFromFilename(filename);
+      }
+
       if (timestamp != null) {
         if (oldestTime == null || timestamp.isBefore(oldestTime)) {
           oldestTime = timestamp;
@@ -143,6 +159,7 @@ Future<File?> findOldestPhotoByFilename(Directory dirc) async {
       }
     }
   }
+
   return oldestFile;
 }
 
@@ -163,7 +180,7 @@ Future<void> touchFile(String filePath) async {
   if (!await file.exists()) return;
 
   try {
-    // Get current time in milliseconds since epoch
+    // Get current time in milliseconds
     final DateTime now = DateTime.now();
 
     // Update the last modified timestamp
