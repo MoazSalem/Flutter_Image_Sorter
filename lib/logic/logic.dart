@@ -10,11 +10,14 @@ sortImages({
   late File? photo;
   final Directory unsortedDir = await getUnsortedDir(selectedDirectory);
   await movePhotosToUnsorted(selectedDirectory, unsortedDir);
-  for (var entity in unsortedDir.listSync(followLinks: false)) {
-    photo = await findOldestPhoto(unsortedDir, useCreationDate: true);
+  for (var f in unsortedDir.listSync(followLinks: false)) {
+    photo = await findOldestPhoto(
+      unsortedDir,
+      useCreationDate: useCreationDate,
+    );
     await moveFileToDirectory(photo!, selectedDirectory);
     await touchFile(
-      path.join(Directory(selectedDirectory).path, path.basename(photo!.path)),
+      path.join(Directory(selectedDirectory).path, path.basename(photo.path)),
     );
   }
 }
