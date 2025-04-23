@@ -9,7 +9,10 @@ sortByFileName(String selectedDirectory) async {
   await movePhotosToUnsorted(selectedDirectory, unsortedDir);
   for (var entity in unsortedDir.listSync(followLinks: false)) {
     photo = await findOldestPhotoByFilename(unsortedDir);
-    moveFileToDirectory(photo!, selectedDirectory);
+    await moveFileToDirectory(photo!, selectedDirectory);
+    await touchFile(
+      path.join(Directory(selectedDirectory).path, path.basename(photo!.path)),
+    );
   }
 }
 
@@ -68,7 +71,7 @@ Future<bool> requestAllStoragePermissions() async {
 }
 
 Future<Directory> getUnsortedDir(String imgPath) async {
-  requestAllStoragePermissions();
+  await requestAllStoragePermissions();
   final sourceDir = Directory(imgPath);
 
   if (!await sourceDir.exists()) {
@@ -152,5 +155,22 @@ Future<void> moveFileToDirectory(File file, String targetDirectoryPath) async {
     debugPrint('File moved to: $newPath');
   } catch (e) {
     debugPrint('Error moving file: $e');
+  }
+}
+
+Future<void> touchFile(String filePath) async {
+  final file = File(filePath);
+  if (!await file.exists()) return;
+
+  try {
+    // Get current time in milliseconds since epoch
+    final now = DateTime.now().millisecondsSinceEpoch;
+
+    // Update the last modified timestamp
+    final result = await file.setLastModified(DateTime.now());
+
+    debugPrint('File timestamp updated: $filePath, success: $result');
+  } catch (e) {
+    debugPrint('Error updating file timestamp: $e');
   }
 }
