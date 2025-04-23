@@ -84,7 +84,7 @@ class _PhotoSorterHomeState extends State<PhotoSorterHome> {
                       '2. All images will be moved to an "unsorted" subfolder',
                     ),
                     Text(
-                      '3. Images will be sorted by date from creation date or filename',
+                      '3. Images will be sorted by date from creation date or file name',
                     ),
                     Text(
                       '4. Sorted images will be moved back to the original folder',
@@ -125,7 +125,7 @@ class _PhotoSorterHomeState extends State<PhotoSorterHome> {
                                     },
                           ),
                           RadioListTile<bool>(
-                            title: const Text('Sort by Filename'),
+                            title: const Text('Sort by File Name'),
                             value: false,
                             groupValue: sortByCreationDate,
                             onChanged:
