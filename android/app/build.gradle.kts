@@ -1,3 +1,7 @@
+import java.io.File
+import java.io.FileInputStream
+import java.util.*
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -5,8 +9,17 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+val keyProperties = Properties().apply {
+    load(FileInputStream(File("keystore.properties")))
+}
+val detKeyAlias = keyProperties.getProperty("keyAlias")
+require(detKeyAlias != null) { "keyAlias not found in key.properties file." }
+val detKeyPassword = keyProperties.getProperty("keyPassword")
+val detStoreFile = keyProperties.getProperty("storeFile")
+val detStorePassword = keyProperties.getProperty("storePassword")
+
 android {
-    namespace = "com.moazsalem.image_sorter"
+    namespace = "com.moazsalem.image.sorter"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = "27.0.12077973"
 
@@ -21,7 +34,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.moazsalem.image_sorter"
+        applicationId = "com.moazsalem.image.sorter"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
@@ -30,11 +43,17 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        create("release") {
+            keyAlias = detKeyAlias
+            keyPassword = detKeyPassword
+            storeFile = file(detStoreFile)
+            storePassword = detStorePassword
+        }
+    }
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }

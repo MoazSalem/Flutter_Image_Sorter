@@ -1,4 +1,4 @@
-package com.moazsalem.image_sorter
+package com.moazsalem.image.sorter
 
 import io.flutter.embedding.android.FlutterActivity
 
