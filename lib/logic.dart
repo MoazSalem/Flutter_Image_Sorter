@@ -164,10 +164,10 @@ Future<void> touchFile(String filePath) async {
 
   try {
     // Get current time in milliseconds since epoch
-    final now = DateTime.now().millisecondsSinceEpoch;
+    final DateTime now = DateTime.now();
 
     // Update the last modified timestamp
-    final result = await file.setLastModified(DateTime.now());
+    final result = await file.setLastModified(now);
 
     debugPrint('File timestamp updated: $filePath, success: $result');
   } catch (e) {

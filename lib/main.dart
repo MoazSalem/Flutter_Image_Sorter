@@ -128,14 +128,7 @@ class _PhotoSorterHomeState extends State<PhotoSorterHome> {
                             title: const Text('Sort by Creation Date'),
                             value: false,
                             groupValue: sortByName,
-                            onChanged:
-                                isProcessing
-                                    ? null
-                                    : (value) {
-                                      setState(() {
-                                        sortByName = value!;
-                                      });
-                                    },
+                            onChanged: null,
                           ),
                         ],
                       ),
@@ -154,7 +147,15 @@ class _PhotoSorterHomeState extends State<PhotoSorterHome> {
               ),
               const SizedBox(height: 10),
               FilledButton.tonal(
-                onPressed: () => sortByFileName(selectedDirectory!),
+                onPressed:
+                    () =>
+                        selectedDirectory == null
+                            ? ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Please select a directory'),
+                              ),
+                            )
+                            : sortByFileName(selectedDirectory!),
                 child: const Text('Start Processing'),
               ),
               const SizedBox(height: 20),
