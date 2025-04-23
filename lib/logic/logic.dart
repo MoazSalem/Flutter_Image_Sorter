@@ -7,19 +7,16 @@ sortImages({
   required String selectedDirectory,
   required bool useCreationDate,
 }) async {
-  late File? photo;
   final Directory unsortedDir = await getUnsortedDir(selectedDirectory);
-  await movePhotosToUnsorted(selectedDirectory, unsortedDir);
-  for (var f in unsortedDir.listSync(followLinks: false)) {
-    photo = await findOldestPhoto(
-      unsortedDir,
-      useCreationDate: useCreationDate,
-    );
-    await moveFileToDirectory(photo!, selectedDirectory);
-    await touchFile(
-      path.join(Directory(selectedDirectory).path, path.basename(photo.path)),
-    );
-  }
+  await movePhotosToUnsorted(
+    sourceDir: selectedDirectory,
+    unsortedDir: unsortedDir,
+  );
+  await sortAndMovePhotos(
+    targetDir: Directory(selectedDirectory),
+    unsortedDir: unsortedDir,
+    useCreationDate: useCreationDate,
+  );
 }
 
 Future<bool> requestAllStoragePermissions() async {
@@ -87,10 +84,10 @@ Future<Directory> getUnsortedDir(String imgPath) async {
   return Directory(path.join(imgPath, 'unsorted'));
 }
 
-Future<void> movePhotosToUnsorted(
-  String sourceDir,
-  Directory unsortedDir,
-) async {
+Future<void> movePhotosToUnsorted({
+  required String sourceDir,
+  required Directory unsortedDir,
+}) async {
   if (!await unsortedDir.exists()) {
     await unsortedDir.create();
   }
@@ -103,7 +100,7 @@ Future<void> movePhotosToUnsorted(
       final newPath = path.join(unsortedDir.path, path.basename(file.path));
       try {
         await file.rename(newPath);
-        debugPrint('Moved: ${file.path} -> $newPath');
+        //debugPrint('Moved: ${file.path} -> $newPath');
       } catch (e) {
         debugPrint('Failed to move ${file.path}: $e');
       }
@@ -184,44 +181,59 @@ DateTime? extractTimestampFromFilename(String filename) {
   return null;
 }
 
-Future<File?> findOldestPhoto(
-  Directory dirc, {
-  bool useCreationDate = false,
+Future<void> sortAndMovePhotos({
+  required Directory unsortedDir,
+  required Directory targetDir,
+  required bool useCreationDate,
 }) async {
-  final Directory dir = Directory(dirc.path);
-  if (!await dir.exists()) return null;
+  // Get sorted list of photo files
+  final sortedFiles = await findOldestPhoto(
+    useCreationDate: useCreationDate,
+    dir: unsortedDir,
+  );
+  debugPrint("$sortedFiles");
+  // Process each file in order
+  for (var file in sortedFiles) {
+    await moveFileToDirectory(file, targetDir);
+    await touchFile(file.path);
+  }
+}
 
-  File? oldestFile;
-  DateTime? oldestTime;
+Future<List<File>> findOldestPhoto({
+  required Directory dir,
+  required bool useCreationDate,
+}) async {
+  if (!await dir.exists()) return [];
 
-  for (var entity in dir.listSync(followLinks: false)) {
-    if (entity is File) {
+  // Buffer list to hold all photo files with their timestamps
+  List<MapEntry<File, DateTime>> timestampedFiles = [];
+
+  for (var file in dir.listSync(followLinks: false)) {
+    if (file is File) {
       DateTime? timestamp;
-
       if (useCreationDate) {
         // Get timestamp from file creation date
-        final FileStat stats = await entity.stat();
+        final FileStat stats = await file.stat();
         timestamp = stats.changed;
       } else {
         // Get timestamp from filename
-        final filename = path.basename(entity.path);
+        final filename = path.basename(file.path);
         timestamp = extractTimestampFromFilename(filename);
       }
 
       if (timestamp != null) {
-        if (oldestTime == null || timestamp.isBefore(oldestTime)) {
-          oldestTime = timestamp;
-          oldestFile = entity;
-        }
+        timestampedFiles.add(MapEntry(file, timestamp));
       }
     }
   }
 
-  return oldestFile;
+  // Sort files by timestamp (oldest first)
+  timestampedFiles.sort((a, b) => a.value.compareTo(b.value));
+  // Extract just the files from the sorted list and return them
+  return timestampedFiles.map((entry) => entry.key).toList();
 }
 
-Future<void> moveFileToDirectory(File file, String targetDirectoryPath) async {
-  final targetDir = Directory(targetDirectoryPath);
+Future<void> moveFileToDirectory(File file, Directory targetDir) async {
   final newPath = path.join(targetDir.path, path.basename(file.path));
 
   try {
@@ -229,6 +241,13 @@ Future<void> moveFileToDirectory(File file, String targetDirectoryPath) async {
     debugPrint('File moved to: $newPath');
   } catch (e) {
     debugPrint('Error moving file: $e');
+    // If rename fails try copy and delete
+    try {
+      await file.copy(newPath);
+      await file.delete();
+    } catch (e) {
+      debugPrint('Error copying and deleting file: $e');
+    }
   }
 }
 
