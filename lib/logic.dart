@@ -129,10 +129,9 @@ Future<File?> findOldestPhotoByFilename(Directory dirc) async {
   DateTime? oldestTime;
 
   for (var entity in dir.listSync(followLinks: false)) {
-    if (entity is File && entity.path.contains('/unsorted/')) {
+    if (entity is File) {
       final filename = path.basename(entity.path);
       final timestamp = extractTimestampFromFilename(filename);
-
       if (timestamp != null) {
         if (oldestTime == null || timestamp.isBefore(oldestTime)) {
           oldestTime = timestamp;
