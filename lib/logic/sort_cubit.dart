@@ -60,12 +60,7 @@ class SortCubit extends Cubit<SortState> {
         useCreationDate: useCreationDate,
       );
     }
-    emit(
-      state.copyWith(
-        isProcessing: false,
-        currentAction: 'Processing is Completed',
-      ),
-    );
+    emit(state.copyWith(isProcessing: false, currentAction: 'Finished !'));
   }
 
   Future<bool> requestAllStoragePermissions() async {
@@ -103,7 +98,7 @@ class SortCubit extends Cubit<SortState> {
   }) async {
     final imageExtensions = ['.jpg', '.jpeg', '.png', '.heic', '.webp'];
     final files = Directory(sourceDir).listSync().whereType<File>();
-
+    emit(state.copyWith(totalFiles: files.length));
     for (final file in files) {
       final ext = path.extension(file.path).toLowerCase();
       if (imageExtensions.contains(ext)) {
@@ -202,12 +197,22 @@ class SortCubit extends Cubit<SortState> {
       useCreationDate: useCreationDate,
       dir: unsortedDir,
     );
+    final list = List<File>.from(sortedFiles);
     debugPrint("$sortedFiles");
     emit(state.copyWith(currentAction: 'Moving Processed Images...'));
     // Process each file in order
-    for (var file in sortedFiles) {
+    emit(state.copyWith(unsortedFiles: sortedFiles.length));
+    for (var file in list) {
       await moveFileToDirectory(file, targetDir);
       await touchFile(file.path);
+      sortedFiles.remove(file);
+      emit(
+        state.copyWith(
+          sortedFiles: list.length - sortedFiles.length,
+          unsortedFiles: sortedFiles.length,
+          processedFiles: list.length - sortedFiles.length,
+        ),
+      );
     }
   }
 

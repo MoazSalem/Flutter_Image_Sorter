@@ -159,41 +159,61 @@ class _PhotoSorterHomeState extends State<MainScreenView> {
                 ),
               ),
               const SizedBox(height: 20),
-              isProcessing
-                  ? Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        children: [
-                          Text(
-                            cubit.state.currentAction,
-                            style: const TextStyle(fontWeight: FontWeight.bold),
+              if (isProcessing || cubit.state.currentAction.isNotEmpty)
+                BlocBuilder<SortCubit, SortState>(
+                  buildWhen: (previous, current) => isProcessing,
+                  builder: (context, state) {
+                    return Column(
+                      children: [
+                        Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              children: [
+                                Text(
+                                  cubit.state.currentAction,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                LinearProgressIndicator(
+                                  value:
+                                      cubit.state.totalFiles > 0
+                                          ? cubit.state.processedFiles /
+                                              cubit.state.totalFiles
+                                          : 0,
+                                ),
+                                const SizedBox(height: 10),
+                                Text(
+                                  '${cubit.state.processedFiles} / ${cubit.state.totalFiles} files',
+                                ),
+                              ],
+                            ),
                           ),
-                          const SizedBox(height: 10),
-                          LinearProgressIndicator(
-                            value:
-                                cubit.state.totalFiles > 0
-                                    ? cubit.state.processedFiles /
-                                        cubit.state.totalFiles
-                                    : 0,
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            '${cubit.state.processedFiles} / ${cubit.state.totalFiles} files',
-                          ),
-                          if (cubit.state.sortedFiles > 0 ||
-                              cubit.state.unsortedFiles > 0)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 8.0),
-                              child: Text(
-                                'Sorted: ${cubit.state.sortedFiles}, Unsorted: ${cubit.state.unsortedFiles}',
+                        ),
+                        if (cubit.state.sortedFiles > 0 ||
+                            cubit.state.unsortedFiles > 0)
+                          Card(
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceAround,
+                                children: [
+                                  Text('Sorted: ${cubit.state.sortedFiles}'),
+                                  Text(
+                                    'Unsorted: ${cubit.state.unsortedFiles}',
+                                  ),
+                                ],
                               ),
                             ),
-                        ],
-                      ),
-                    ),
-                  )
-                  : Center(child: Text(cubit.state.currentAction)),
+                          ),
+                        const SizedBox(height: 20),
+                      ],
+                    );
+                  },
+                ),
             ],
           ),
         ),
