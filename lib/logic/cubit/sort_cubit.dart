@@ -9,6 +9,7 @@ import 'package:image_sorter/logic/file_handling.dart';
 import 'package:image_sorter/logic/file_name_parser.dart';
 import 'package:image_sorter/logic/permissions_handling.dart';
 import 'package:path/path.dart' as path;
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 part 'sort_state.dart';
 
@@ -50,6 +51,8 @@ class SortCubit extends Cubit<SortState> {
     required String selectedDirectory,
     required bool useCreationDate,
   }) async {
+    // Keep Screen On While Processing
+    WakelockPlus.enable();
     // Start Processing
     emit(
       state.copyWith(
@@ -85,6 +88,8 @@ class SortCubit extends Cubit<SortState> {
       );
     }
     emit(state.copyWith(isProcessing: false, currentAction: 'Finished !'));
+    // Disable Screen On After Processing
+    WakelockPlus.disable();
   }
 
   Future<void> moveImagesToUnsorted({
