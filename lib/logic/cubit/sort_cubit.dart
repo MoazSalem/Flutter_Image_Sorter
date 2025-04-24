@@ -154,9 +154,11 @@ class SortCubit extends Cubit<SortState> {
 
     // Process each file in order
     for (var file in list) {
-      await moveFileToDirectory(file, targetDir);
       await touchFile(file.path);
+      await moveFileToDirectory(file, targetDir);
       sortedFiles.remove(file);
+      // Wait for 1 second (it seems that android doesn't register file changes if it's too fast)
+      await Future.delayed(const Duration(seconds: 1));
       emit(
         state.copyWith(
           sortedFiles: list.length - sortedFiles.length,
