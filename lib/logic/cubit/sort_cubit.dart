@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:image_sorter/core/consts.dart';
+import 'package:image_sorter/logic/file_date_parser.dart';
 import 'package:image_sorter/logic/file_handling.dart';
 import 'package:image_sorter/logic/file_name_parser.dart';
 import 'package:image_sorter/logic/permissions_handling.dart';
@@ -125,8 +126,7 @@ class SortCubit extends Cubit<SortState> {
         DateTime? timestamp;
         if (useCreationDate) {
           // Get timestamp from file creation date
-          final FileStat stats = await file.stat();
-          timestamp = stats.changed;
+          timestamp = await findOldestFileTimestamp(file);
         } else {
           // Get timestamp from filename
           final filename = path.basename(file.path);
