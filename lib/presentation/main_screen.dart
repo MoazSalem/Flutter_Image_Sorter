@@ -1,8 +1,8 @@
-import 'package:file_picker/file_picker.dart';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_sorter/logic/sort_cubit.dart';
 import 'package:path/path.dart' as path;
-
-import '../logic/logic.dart';
 
 class MainScreenView extends StatefulWidget {
   const MainScreenView({super.key});
@@ -12,27 +12,12 @@ class MainScreenView extends StatefulWidget {
 }
 
 class _PhotoSorterHomeState extends State<MainScreenView> {
-  String? selectedDirectory;
-  bool isProcessing = false;
-  int totalFiles = 0;
-  int processedFiles = 0;
-  int sortedFiles = 0;
-  int unsortedFiles = 0;
-  String currentAction = "";
-  bool sortByCreationDate = true;
-
-  Future<void> selectFolder() async {
-    String? selectedDir = await FilePicker.platform.getDirectoryPath();
-
-    if (selectedDir != null) {
-      setState(() {
-        selectedDirectory = selectedDir;
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    final cubit = context.read<SortCubit>();
+    final isProcessing = context.select<SortCubit, bool>(
+      (cubit) => cubit.state.isProcessing,
+    );
     return Scaffold(
       appBar: AppBar(title: const Text('Image Sorter')),
       body: Padding(
@@ -90,94 +75,125 @@ class _PhotoSorterHomeState extends State<MainScreenView> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      Column(
-                        children: [
-                          RadioListTile<bool>(
-                            title: const Text('Sort by Creation Date'),
-                            value: true,
-                            groupValue: sortByCreationDate,
-                            onChanged:
-                                isProcessing
-                                    ? null
-                                    : (value) {
-                                      setState(() {
-                                        sortByCreationDate = value!;
-                                      });
-                                    },
-                          ),
-                          RadioListTile<bool>(
-                            title: const Text('Sort by File Name'),
-                            value: false,
-                            groupValue: sortByCreationDate,
-                            onChanged:
-                                isProcessing
-                                    ? null
-                                    : (value) {
-                                      setState(() {
-                                        sortByCreationDate = value!;
-                                      });
-                                    },
-                          ),
-                        ],
+                      BlocSelector<SortCubit, SortState, bool>(
+                        selector: (state) {
+                          return state.sortByCreationDate;
+                        },
+                        builder: (context, sortByCreationDate) {
+                          return Column(
+                            children: [
+                              RadioListTile<bool>(
+                                title: const Text('Sort by Creation Date'),
+                                value: true,
+                                groupValue: sortByCreationDate,
+                                onChanged:
+                                    isProcessing
+                                        ? null
+                                        : (value) {
+                                          context
+                                              .read<SortCubit>()
+                                              .setSortMethod(value!);
+                                        },
+                              ),
+                              RadioListTile<bool>(
+                                title: const Text('Sort by File Name'),
+                                value: false,
+                                groupValue: sortByCreationDate,
+                                onChanged:
+                                    isProcessing
+                                        ? null
+                                        : (value) {
+                                          context
+                                              .read<SortCubit>()
+                                              .setSortMethod(value!);
+                                        },
+                              ),
+                            ],
+                          );
+                        },
                       ),
                     ],
                   ),
                 ),
               ),
               const SizedBox(height: 20),
-              FilledButton(
-                onPressed: isProcessing ? null : selectFolder,
-                child: Text(
-                  selectedDirectory == null
-                      ? 'Select Image Folder'
-                      : 'Selected: ${path.basename(selectedDirectory!)}',
+              SizedBox(
+                width: double.infinity,
+                child: BlocSelector<SortCubit, SortState, Directory?>(
+                  selector: (state) {
+                    return state.selectedDirectory;
+                  },
+                  builder: (context, selectedDirectory) {
+                    return FilledButton(
+                      onPressed:
+                          isProcessing
+                              ? null
+                              : context.read<SortCubit>().selectFolder,
+                      child: Text(
+                        selectedDirectory == null
+                            ? 'Select Image Folder'
+                            : 'Selected: ${path.basename(selectedDirectory.path)}',
+                      ),
+                    );
+                  },
                 ),
               ),
               const SizedBox(height: 10),
-              FilledButton.tonal(
-                onPressed:
-                    () =>
-                        selectedDirectory == null
-                            ? ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Please select a directory'),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.tonal(
+                  onPressed:
+                      () =>
+                          cubit.state.selectedDirectory == null
+                              ? ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Please select a directory'),
+                                ),
+                              )
+                              : BlocProvider.of<SortCubit>(context).sortImages(
+                                selectedDirectory:
+                                    cubit.state.selectedDirectory!.path,
+                                useCreationDate: cubit.state.sortByCreationDate,
                               ),
-                            )
-                            : sortImages(
-                              selectedDirectory: selectedDirectory!,
-                              useCreationDate: sortByCreationDate,
-                            ),
-                child: const Text('Start Processing'),
+                  child: const Text('Start Processing'),
+                ),
               ),
               const SizedBox(height: 20),
-              if (isProcessing)
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      children: [
-                        Text(
-                          currentAction,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 10),
-                        LinearProgressIndicator(
-                          value:
-                              totalFiles > 0 ? processedFiles / totalFiles : 0,
-                        ),
-                        const SizedBox(height: 10),
-                        Text('$processedFiles / $totalFiles files'),
-                        if (sortedFiles > 0 || unsortedFiles > 0)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8.0),
-                            child: Text(
-                              'Sorted: $sortedFiles, Unsorted: $unsortedFiles',
-                            ),
+              isProcessing
+                  ? Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        children: [
+                          Text(
+                            cubit.state.currentAction,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
-                      ],
+                          const SizedBox(height: 10),
+                          LinearProgressIndicator(
+                            value:
+                                cubit.state.totalFiles > 0
+                                    ? cubit.state.processedFiles /
+                                        cubit.state.totalFiles
+                                    : 0,
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            '${cubit.state.processedFiles} / ${cubit.state.totalFiles} files',
+                          ),
+                          if (cubit.state.sortedFiles > 0 ||
+                              cubit.state.unsortedFiles > 0)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8.0),
+                              child: Text(
+                                'Sorted: ${cubit.state.sortedFiles}, Unsorted: ${cubit.state.unsortedFiles}',
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
-                  ),
-                ),
+                  )
+                  : Center(child: Text(cubit.state.currentAction)),
             ],
           ),
         ),
