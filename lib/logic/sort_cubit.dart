@@ -102,7 +102,7 @@ class SortCubit extends Cubit<SortState> {
   }) async {
     final imageExtensions = ['.jpg', '.jpeg', '.png', '.heic', '.webp'];
     final files = Directory(sourceDir).listSync().whereType<File>();
-    emit(state.copyWith(totalFiles: files.length));
+    emit(state.copyWith(totalFiles: files.length, processedFiles: 0));
     for (final file in files) {
       emit(state.copyWith(processedFiles: state.processedFiles + 1));
       final ext = path.extension(file.path).toLowerCase();
