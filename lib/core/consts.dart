@@ -1,0 +1,17 @@
+const imageExtensions = [
+  '.jpg',
+  '.jpeg',
+  '.png',
+  '.webp',
+  '.heic',
+  '.bmp',
+  '.gif',
+  '.tiff',
+  '.tif',
+  '.dng',
+  '.raw',
+  '.cr2',
+  '.nef',
+  '.orf',
+  '.sr2',
+];

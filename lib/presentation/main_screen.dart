@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:image_sorter/logic/sort_cubit.dart';
+import 'package:image_sorter/logic/cubit/sort_cubit.dart';
 import 'package:path/path.dart' as path;
 
 class MainScreenView extends StatefulWidget {

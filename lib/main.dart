@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_sorter/presentation/main_screen.dart';
-import 'logic/sort_cubit.dart';
+import 'logic/cubit/sort_cubit.dart';
 
 void main() {
   runApp(const MyApp());
