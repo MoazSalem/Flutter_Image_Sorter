@@ -83,8 +83,8 @@ class _PhotoSorterHomeState extends State<MainScreenView> {
                           return Column(
                             children: [
                               RadioListTile<bool>(
-                                title: const Text('Sort by Creation Date'),
-                                value: true,
+                                title: const Text('Sort by File Name'),
+                                value: false,
                                 groupValue: sortByCreationDate,
                                 onChanged:
                                     isProcessing
@@ -96,8 +96,8 @@ class _PhotoSorterHomeState extends State<MainScreenView> {
                                         },
                               ),
                               RadioListTile<bool>(
-                                title: const Text('Sort by File Name'),
-                                value: false,
+                                title: const Text('Sort by Creation Date'),
+                                value: true,
                                 groupValue: sortByCreationDate,
                                 onChanged:
                                     isProcessing

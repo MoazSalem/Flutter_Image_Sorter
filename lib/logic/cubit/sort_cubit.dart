@@ -24,7 +24,7 @@ class SortCubit extends Cubit<SortState> {
           sortedFiles: 0,
           unsortedFiles: 0,
           currentAction: '',
-          sortByCreationDate: true,
+          sortByCreationDate: false,
         ),
       );
 
