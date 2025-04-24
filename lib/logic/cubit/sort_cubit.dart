@@ -29,7 +29,15 @@ class SortCubit extends Cubit<SortState> {
   Future<void> selectFolder() async {
     String? selectedDir = await FilePicker.platform.getDirectoryPath();
     if (selectedDir != null) {
-      emit(state.copyWith(selectedDirectory: Directory(selectedDir)));
+      emit(
+        state.copyWith(
+          selectedDirectory: Directory(selectedDir),
+          sortedFiles: 0,
+          unsortedFiles: 0,
+          processedFiles: 0,
+          totalFiles: 0,
+        ),
+      );
     }
   }
 
