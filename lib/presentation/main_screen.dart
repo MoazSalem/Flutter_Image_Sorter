@@ -150,6 +150,8 @@ class _PhotoSorterHomeState extends State<MainScreenView> {
                                   content: Text('Please select a directory'),
                                 ),
                               )
+                              : isProcessing
+                              ? null
                               : BlocProvider.of<SortCubit>(context).sortImages(
                                 selectedDirectory:
                                     cubit.state.selectedDirectory!.path,
