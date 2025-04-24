@@ -57,6 +57,7 @@ class SortCubit extends Cubit<SortState> {
         sourceDir: selectedDirectory,
         unsortedDir: unsortedDir,
       );
+      emit(state.copyWith(currentAction: 'Sorting...'));
       await sortAndMovePhotos(
         targetDir: Directory(selectedDirectory),
         unsortedDir: unsortedDir,
@@ -103,6 +104,7 @@ class SortCubit extends Cubit<SortState> {
     final files = Directory(sourceDir).listSync().whereType<File>();
     emit(state.copyWith(totalFiles: files.length));
     for (final file in files) {
+      emit(state.copyWith(processedFiles: state.processedFiles + 1));
       final ext = path.extension(file.path).toLowerCase();
       if (imageExtensions.contains(ext)) {
         final newPath = path.join(unsortedDir.path, path.basename(file.path));
@@ -194,7 +196,6 @@ class SortCubit extends Cubit<SortState> {
     required Directory targetDir,
     required bool useCreationDate,
   }) async {
-    emit(state.copyWith(currentAction: 'Sorting...'));
     // Get sorted list of photo files
     final sortedFiles = await findOldestPhoto(
       useCreationDate: useCreationDate,
@@ -212,7 +213,7 @@ class SortCubit extends Cubit<SortState> {
       emit(
         state.copyWith(
           sortedFiles: list.length - sortedFiles.length,
-          unsortedFiles: list.length - sortedFiles.length - state.sortedFiles,
+          unsortedFiles: state.totalFiles - (list.length - sortedFiles.length),
           processedFiles: state.totalFiles - sortedFiles.length,
         ),
       );
