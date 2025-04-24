@@ -49,6 +49,9 @@ class SortCubit extends Cubit<SortState> {
       final Directory unsortedDir = Directory(
         path.join(selectedDirectory, 'unsorted'),
       );
+      if (!await unsortedDir.exists()) {
+        await unsortedDir.create();
+      }
       emit(state.copyWith(currentAction: 'Moving Images to unsorted...'));
       await movePhotosToUnsorted(
         sourceDir: selectedDirectory,
@@ -209,10 +212,22 @@ class SortCubit extends Cubit<SortState> {
       emit(
         state.copyWith(
           sortedFiles: list.length - sortedFiles.length,
-          unsortedFiles: sortedFiles.length,
-          processedFiles: list.length - sortedFiles.length,
+          unsortedFiles: list.length - sortedFiles.length - state.sortedFiles,
+          processedFiles: state.totalFiles - sortedFiles.length,
         ),
       );
+    }
+    handleUnsortedFiles(targetDir: unsortedDir);
+  }
+
+  handleUnsortedFiles({required Directory targetDir}) {
+    final files = targetDir.listSync().whereType<File>();
+    if (files.isNotEmpty) {
+      //TODO: Handle unsorted files
+      emit(state.copyWith(unsortedFiles: files.length));
+    } else {
+      emit(state.copyWith(currentAction: 'Deleting Unsorted Folder...'));
+      targetDir.delete();
     }
   }
 
