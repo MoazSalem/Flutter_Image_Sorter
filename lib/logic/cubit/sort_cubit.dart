@@ -109,7 +109,9 @@ class SortCubit extends Cubit<SortState> {
   }
 
   // Function to find oldest images and sort them in order of oldest to newest
-  Future<List<File>> findOldestImages({required Directory dir}) async {
+  Future<List<MapEntry<File, DateTime>>> findOldestImages({
+    required Directory dir,
+  }) async {
     if (!await dir.exists()) return [];
 
     // Buffer list to hold all image files with their timestamps
@@ -139,10 +141,6 @@ class SortCubit extends Cubit<SortState> {
           timestamp = timestampCreationDate;
         }
 
-        debugPrint("final:$timestamp");
-        debugPrint("$timestampFilename");
-        debugPrint("$timestampCreationDate");
-
         if (timestamp != null) {
           timestampedFiles.add(MapEntry(file, timestamp));
         }
@@ -151,7 +149,7 @@ class SortCubit extends Cubit<SortState> {
     // Sort files by timestamp (oldest first)
     timestampedFiles.sort((a, b) => a.value.compareTo(b.value));
     // Extract just the files from the sorted list and return them
-    return timestampedFiles.map((entry) => entry.key).toList();
+    return timestampedFiles;
   }
 
   // Combine findOldestImages and moveFileToDirectory functions to sort and move images
@@ -162,17 +160,18 @@ class SortCubit extends Cubit<SortState> {
     // Get sorted list of image files
     final sortedFiles = await findOldestImages(dir: unsortedDir);
     // Another list to avoid problems with removing files from the list in the for loop
-    final list = List<File>.from(sortedFiles);
+    final list = List<File>.from(
+      sortedFiles.map((entry) => entry.key).toList(),
+    );
 
     emit(state.copyWith(currentAction: 'Moving Processed Images...'));
 
     // Process each file in order
     for (var file in list) {
-      await touchFile(file.path);
-      await moveFileToDirectory(file, targetDir);
-      sortedFiles.remove(file);
-      // Wait for 1 second (it seems that android doesn't register file changes if it's too fast)
-      await Future.delayed(const Duration(seconds: 1));
+      final movedFile = await moveFileToDirectory(file, targetDir);
+      final entry = sortedFiles.firstWhere((e) => e.key == file);
+      await movedFile!.setLastModified(entry.value);
+      sortedFiles.remove(entry);
       emit(
         state.copyWith(
           sortedFiles: list.length - sortedFiles.length,
