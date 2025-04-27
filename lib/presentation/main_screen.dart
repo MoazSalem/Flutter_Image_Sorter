@@ -28,6 +28,7 @@ class _PhotoSorterHomeState extends State<MainScreenView> {
             children: [
               const Card(
                 child: ExpansionTile(
+                  initiallyExpanded: true,
                   title: Text(
                     'How it works:',
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
@@ -62,61 +63,6 @@ class _PhotoSorterHomeState extends State<MainScreenView> {
                 ),
               ),
               const SizedBox(height: 10),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      const Text(
-                        'Select Sort Method',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      BlocSelector<SortCubit, SortState, bool>(
-                        selector: (state) {
-                          return state.sortByCreationDate;
-                        },
-                        builder: (context, sortByCreationDate) {
-                          return Column(
-                            children: [
-                              RadioListTile<bool>(
-                                title: const Text('Sort by File Name'),
-                                value: false,
-                                groupValue: sortByCreationDate,
-                                onChanged:
-                                    isProcessing
-                                        ? null
-                                        : (value) {
-                                          context
-                                              .read<SortCubit>()
-                                              .setSortMethod(value!);
-                                        },
-                              ),
-                              RadioListTile<bool>(
-                                title: const Text('Sort by Creation Date'),
-                                value: true,
-                                groupValue: sortByCreationDate,
-                                onChanged:
-                                    isProcessing
-                                        ? null
-                                        : (value) {
-                                          context
-                                              .read<SortCubit>()
-                                              .setSortMethod(value!);
-                                        },
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
               SizedBox(
                 width: double.infinity,
                 child: BlocSelector<SortCubit, SortState, Directory?>(
@@ -155,7 +101,6 @@ class _PhotoSorterHomeState extends State<MainScreenView> {
                               : BlocProvider.of<SortCubit>(context).sortImages(
                                 selectedDirectory:
                                     cubit.state.selectedDirectory!.path,
-                                useCreationDate: cubit.state.sortByCreationDate,
                               ),
                   child: const Text('Start Processing'),
                 ),

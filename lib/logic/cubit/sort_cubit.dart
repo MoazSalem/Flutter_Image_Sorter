@@ -24,7 +24,6 @@ class SortCubit extends Cubit<SortState> {
           sortedFiles: 0,
           unsortedFiles: 0,
           currentAction: '',
-          sortByCreationDate: false,
         ),
       );
 
@@ -43,14 +42,8 @@ class SortCubit extends Cubit<SortState> {
     }
   }
 
-  setSortMethod(bool sortByCreationDate) =>
-      emit(state.copyWith(sortByCreationDate: sortByCreationDate));
-
   // Main Function
-  sortImages({
-    required String selectedDirectory,
-    required bool useCreationDate,
-  }) async {
+  sortImages({required String selectedDirectory}) async {
     // Keep Screen On While Processing
     WakelockPlus.enable();
     // Start Processing
@@ -84,7 +77,6 @@ class SortCubit extends Cubit<SortState> {
       await sortAndMoveImages(
         targetDir: Directory(selectedDirectory),
         unsortedDir: unsortedDir,
-        useCreationDate: useCreationDate,
       );
     }
     emit(state.copyWith(isProcessing: false, currentAction: 'Finished !'));
@@ -117,10 +109,7 @@ class SortCubit extends Cubit<SortState> {
   }
 
   // Function to find oldest images and sort them in order of oldest to newest
-  Future<List<File>> findOldestImages({
-    required Directory dir,
-    required bool useCreationDate,
-  }) async {
+  Future<List<File>> findOldestImages({required Directory dir}) async {
     if (!await dir.exists()) return [];
 
     // Buffer list to hold all image files with their timestamps
@@ -128,15 +117,31 @@ class SortCubit extends Cubit<SortState> {
 
     for (var file in dir.listSync(followLinks: false)) {
       if (file is File) {
+        DateTime? timestampCreationDate;
+        DateTime? timestampFilename;
         DateTime? timestamp;
-        if (useCreationDate) {
-          // Get timestamp from file creation date
-          timestamp = await findOldestFileTimestamp(file);
-        } else {
-          // Get timestamp from filename
-          final filename = path.basename(file.path);
-          timestamp = extractTimestampFromFilename(filename);
+
+        // Get timestamp from file creation date
+        timestampCreationDate = await findOldestFileTimestamp(file);
+        // Get timestamp from filename
+        final filename = path.basename(file.path);
+        timestampFilename = extractTimestampFromFilename(filename);
+
+        // Compare timestamps and use the oldest
+        if (timestampFilename != null && timestampCreationDate != null) {
+          timestamp =
+              timestampFilename.isBefore(timestampCreationDate)
+                  ? timestampFilename
+                  : timestampCreationDate;
+        } else if (timestampFilename != null) {
+          timestamp = timestampFilename;
+        } else if (timestampCreationDate != null) {
+          timestamp = timestampCreationDate;
         }
+
+        debugPrint("final:$timestamp");
+        debugPrint("$timestampFilename");
+        debugPrint("$timestampCreationDate");
 
         if (timestamp != null) {
           timestampedFiles.add(MapEntry(file, timestamp));
@@ -153,13 +158,9 @@ class SortCubit extends Cubit<SortState> {
   Future<void> sortAndMoveImages({
     required Directory unsortedDir,
     required Directory targetDir,
-    required bool useCreationDate,
   }) async {
     // Get sorted list of image files
-    final sortedFiles = await findOldestImages(
-      useCreationDate: useCreationDate,
-      dir: unsortedDir,
-    );
+    final sortedFiles = await findOldestImages(dir: unsortedDir);
     // Another list to avoid problems with removing files from the list in the for loop
     final list = List<File>.from(sortedFiles);
 
