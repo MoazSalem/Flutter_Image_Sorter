@@ -14,6 +14,26 @@ Future<DateTime?> findOldestFileTimestamp(File file) async {
     timestamps.add(stats.accessed);
     timestamps.add(stats.changed);
 
+    DateTime modifiedRounded = stats.modified.subtract(
+      Duration(
+        seconds: stats.modified.second,
+        milliseconds: stats.modified.millisecond,
+        microseconds: stats.modified.microsecond,
+      ),
+    );
+    DateTime accessedRounded = stats.accessed.subtract(
+      Duration(
+        seconds: stats.modified.second,
+        milliseconds: stats.accessed.millisecond,
+        microseconds: stats.accessed.microsecond,
+      ),
+    );
+
+    if (modifiedRounded == accessedRounded) {
+      debugPrint("Creation date is Missed up for ${file.path}");
+      return null;
+    }
+
     if (timestamps.isEmpty) {
       debugPrint("Warning: No valid timestamps retrieved for ${file.path}");
       return null;
@@ -24,7 +44,6 @@ Future<DateTime?> findOldestFileTimestamp(File file) async {
         oldest = timestamps[i];
       }
     }
-    debugPrint("Oldest timestamp for ${file.path}: $oldest");
     return oldest;
   } catch (e) {
     // Catch any other unexpected errors
