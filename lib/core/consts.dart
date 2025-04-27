@@ -15,3 +15,6 @@ const imageExtensions = [
   '.orf',
   '.sr2',
 ];
+
+// EXIF Tag ID for DateTimeOriginal (0x9003)
+const int dateTimeOriginalTagId = 36867;
