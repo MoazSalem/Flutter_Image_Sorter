@@ -30,7 +30,11 @@ void onStart(ServiceInstance service) async {
         'totalFiles': 0,
         'processedFiles': 0,
       });
-      // TODO: Show/Update Initial Notification
+      changeNotification(
+        title: 'Sorting',
+        body: 'Preparing...',
+        onGoing: false,
+      );
 
       // 2. Create unsorted folder
       if (!await unsortedDir.exists()) {
@@ -41,7 +45,11 @@ void onStart(ServiceInstance service) async {
       service.invoke('update', {
         'currentAction': 'Moving Images to unsorted...',
       });
-      // TODO: Update Notification
+      changeNotification(
+        title: 'Sorting',
+        body: 'Moving Images to unsorted...',
+        onGoing: false,
+      );
       await backgroundMoveImagesToUnsorted(
         sourceDir: selectedDirectory,
         unsortedDir: unsortedDir,
@@ -57,11 +65,15 @@ void onStart(ServiceInstance service) async {
       );
 
       // 5. Finalization
+      changeNotification(
+        title: 'Sorting',
+        body: 'Sorting Process Finished',
+        onGoing: true,
+      );
       service.invoke('finished');
-      // TODO: Update/Cancel Notification (Finished)
     } catch (e) {
       service.invoke('error', {'message': e.toString()});
-      // TODO: Update/Cancel Notification (Error)
+      changeNotification(title: 'Error', body: 'e.toString()', onGoing: false);
     } finally {
       // Stop the service
       service.stopSelf();

@@ -4,6 +4,7 @@ import 'package:image_sorter/core/consts.dart';
 import 'package:image_sorter/logic/file_date_parser.dart';
 import 'package:image_sorter/logic/file_handling.dart';
 import 'package:image_sorter/logic/file_name_parser.dart';
+import 'package:image_sorter/logic/notification_handling.dart';
 import 'package:path/path.dart' as path;
 
 Future<void> backgroundMoveImagesToUnsorted({
@@ -31,8 +32,13 @@ Future<void> backgroundMoveImagesToUnsorted({
       'totalFiles': files.length,
       'processedFiles': ++index,
     });
+    changeNotification(
+      title: 'Sorting',
+      body: 'Moving Images to unsorted: $index / ${files.length}',
+      progress: (index / files.length * 100).toInt(),
+      onGoing: true,
+    );
   }
-  // TODO: Update Notification Progress
 }
 
 Future<List<MapEntry<File, DateTime>>> backgroundFindOldestImages({
@@ -45,6 +51,7 @@ Future<List<MapEntry<File, DateTime>>> backgroundFindOldestImages({
   // Buffer list to hold all image files with their timestamps
   List<MapEntry<File, DateTime>> timestampedFiles = [];
   int index = 0;
+  int totalFiles = dir.listSync().whereType<File>().length;
 
   service.invoke('update', {'processedFiles': 0});
   for (var file in dir.listSync(followLinks: false)) {
@@ -82,6 +89,12 @@ Future<List<MapEntry<File, DateTime>>> backgroundFindOldestImages({
       }
 
       service.invoke('update', {'processedFiles': ++index});
+      changeNotification(
+        title: 'Sorting',
+        body: 'Getting Timestamps: $index / $totalFiles',
+        progress: (index / totalFiles * 100).toInt(),
+        onGoing: true,
+      );
 
       if (timestamp != null) {
         timestampedFiles.add(MapEntry(file, timestamp));
@@ -92,7 +105,6 @@ Future<List<MapEntry<File, DateTime>>> backgroundFindOldestImages({
   // Sort files by timestamp (oldest first)
   timestampedFiles.sort((a, b) => a.value.compareTo(b.value));
   return timestampedFiles;
-  // TODO: Update Notification Text/Progress
 }
 
 Future<void> backgroundSortAndMoveImages({
@@ -122,9 +134,15 @@ Future<void> backgroundSortAndMoveImages({
       'unsortedFiles': totalFiles - (list.length - sortedFiles.length),
       'processedFiles': totalFiles - sortedFiles.length,
     });
+    changeNotification(
+      title: 'Sorting',
+      body:
+          'Moving Processed Images: ${totalFiles - sortedFiles.length} / $totalFiles',
+      progress: ((totalFiles - sortedFiles.length) / totalFiles * 100).toInt(),
+      onGoing: true,
+    );
   }
   backgroundHandleUnsortedFiles(unsortedDir: unsortedDir, service: service);
-  // TODO: Update Notification Text/Progress
 }
 
 void backgroundHandleUnsortedFiles({
@@ -138,5 +156,4 @@ void backgroundHandleUnsortedFiles({
     service.invoke('update', {'currentAction': 'Deleting Unsorted Folder...'});
     unsortedDir.delete(); // Ensure service has permissions
   }
-  // TODO: Update Notification Text/Progress
 }

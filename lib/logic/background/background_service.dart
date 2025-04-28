@@ -33,7 +33,7 @@ Future<FlutterBackgroundService> initializeBackgroundService() async {
       autoStart: true,
       notificationChannelId: notificationChannelId,
       initialNotificationTitle: 'Image Sorter',
-      initialNotificationContent: 'Initializing',
+      initialNotificationContent: 'Background Service is running',
       foregroundServiceNotificationId: notificationId,
     ),
     iosConfiguration: IosConfiguration(),
