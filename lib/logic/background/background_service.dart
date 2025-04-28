@@ -1,19 +1,14 @@
 import 'dart:async';
-import 'dart:ui';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'background_logic.dart';
 
-import 'notification_handling.dart';
-
-// this will be used as notification channel id
+// Unique ids for notification
 const notificationChannelId = 'image_sorter_foreground';
-
-// this will be used for notification id, So you can update your custom notification with this id.
 const notificationId = 453;
+final service = FlutterBackgroundService();
 
-Future<void> initializeBackgroundService() async {
-  final service = FlutterBackgroundService();
-
+Future<FlutterBackgroundService> initializeBackgroundService() async {
   const AndroidNotificationChannel channel = AndroidNotificationChannel(
     notificationChannelId, // id
     'IMAGE SORTER SERVICE', // title
@@ -43,12 +38,5 @@ Future<void> initializeBackgroundService() async {
     ),
     iosConfiguration: IosConfiguration(),
   );
-
-  service.startService();
-}
-
-@pragma('vm:entry-point')
-void onStart(ServiceInstance service) {
-  DartPluginRegistrant.ensureInitialized();
-  initializeNotificationService();
+  return service;
 }
