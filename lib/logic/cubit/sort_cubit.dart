@@ -11,7 +11,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 part 'sort_state.dart';
 
 class SortCubit extends Cubit<SortState> {
-  final FlutterBackgroundService _backgroundService = service;
+  late final FlutterBackgroundService _backgroundService;
 
   SortCubit()
     : super(
@@ -25,8 +25,12 @@ class SortCubit extends Cubit<SortState> {
           currentAction: '',
           metadataSearching: false,
         ),
-      ) {
-    // Initialize Listener for Background Service Updates
+      );
+
+  // Initialize listener only when starting the background service
+  Future<void> initializeBackgroundServiceListener() async {
+    _backgroundService = await initializeBackgroundService();
+
     _backgroundService.on('update').listen((event) {
       if (event != null) {
         // Assuming the event map contains state updates
@@ -42,10 +46,12 @@ class SortCubit extends Cubit<SortState> {
         );
       }
     });
+
     _backgroundService.on('finished').listen((event) {
       emit(state.copyWith(isProcessing: false, currentAction: 'Finished !'));
       WakelockPlus.disable();
     });
+
     _backgroundService.on('error').listen((event) {
       // Handle errors reported by the background service
       emit(
@@ -56,6 +62,7 @@ class SortCubit extends Cubit<SortState> {
       );
       WakelockPlus.disable();
     });
+
     _backgroundService.on('debug').listen((event) {
       debugPrint(event!['debugMessage']);
     });
@@ -88,6 +95,9 @@ class SortCubit extends Cubit<SortState> {
     required String selectedDirectory,
     bool metadataSearching = false,
   }) async {
+    // Start listening for service updates
+    await initializeBackgroundServiceListener();
+
     // Keep Screen On While Processing
     WakelockPlus.enable();
 
@@ -109,9 +119,8 @@ class SortCubit extends Cubit<SortState> {
 
     if (granted) {
       emit(state.copyWith(currentAction: 'Starting background process...'));
-
-      // --- Trigger Background Service ---
-      await _backgroundService.startService(); // Ensure service is running
+      // Start the service only when permissions are granted
+      await _backgroundService.startService();
       _backgroundService.invoke('startSort', {
         'selectedDirectory': selectedDirectory,
         'metadataSearching': metadataSearching,
