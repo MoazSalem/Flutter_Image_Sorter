@@ -11,7 +11,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 part 'sort_state.dart';
 
 class SortCubit extends Cubit<SortState> {
-  late final FlutterBackgroundService _backgroundService;
+  late FlutterBackgroundService _backgroundService;
 
   SortCubit()
     : super(

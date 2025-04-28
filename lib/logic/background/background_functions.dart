@@ -18,7 +18,7 @@ Future<void> backgroundMoveImagesToUnsorted({
   // Move each image file to the unsorted directory
   for (final file in files) {
     final ext = path.extension(file.path).toLowerCase();
-    if (imageExtensions.contains(ext)) {
+    if (imageExtensions.contains(ext) || commonVideoExtensions.contains(ext)) {
       final newPath = path.join(unsortedDir.path, path.basename(file.path));
       try {
         await file.rename(newPath);

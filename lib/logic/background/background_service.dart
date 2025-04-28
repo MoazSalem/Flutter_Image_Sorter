@@ -7,6 +7,8 @@ import 'background_logic.dart';
 const notificationChannelId = 'image_sorter_foreground';
 const notificationId = 453;
 final service = FlutterBackgroundService();
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+    FlutterLocalNotificationsPlugin();
 
 Future<FlutterBackgroundService> initializeBackgroundService() async {
   const AndroidNotificationChannel channel = AndroidNotificationChannel(
@@ -16,9 +18,6 @@ Future<FlutterBackgroundService> initializeBackgroundService() async {
         'This channel is used for image sorter updates.', // description
     importance: Importance.low, // importance must be at low or higher level
   );
-
-  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-      FlutterLocalNotificationsPlugin();
 
   await flutterLocalNotificationsPlugin
       .resolvePlatformSpecificImplementation<

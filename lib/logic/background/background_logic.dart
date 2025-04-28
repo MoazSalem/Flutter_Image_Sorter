@@ -1,18 +1,13 @@
-//Background Service Entry Point
-
 import 'dart:io';
 import 'dart:ui';
-
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:image_sorter/logic/notification_handling.dart';
 import 'package:path/path.dart' as path;
-
 import 'background_functions.dart';
 
 @pragma('vm:entry-point')
 void onStart(ServiceInstance service) async {
   DartPluginRegistrant.ensureInitialized();
-  initializeNotificationService();
 
   // Listen for commands from the Cubit to start sorting
   service.on('startSort').listen((event) async {
