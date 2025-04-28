@@ -12,6 +12,7 @@ Messed-up your photos when backing them up? no worries.
 
 ## Features 🔥
 
+- 🚀 Handles sorting in a separate background **isolate** with notifications.
 - 🕰️ Automatically finds the **Oldest Timestamp** from the file name or metadata.
 - 🛠️ Fixes the file's **Last Modified Date** to match the correct timestamp.
 - 🎨 Sleek **Material 3** UI.
@@ -21,8 +22,8 @@ Messed-up your photos when backing them up? no worries.
 
 ## Screenshots 📸
 
-| Home Screen | Difficulty Menu |
-|:-----------:|:---------------:|
+|                                                                                                         |                                                                                                         |
+|:-------------------------------------------------------------------------------------------------------:|:-------------------------------------------------------------------------------------------------------:|
 | <img src="https://github.com/user-attachments/assets/be2728e1-9bdb-48c2-95f9-cdde40436e1f" width="300"> | <img src="https://github.com/user-attachments/assets/ede65bfd-592f-4632-9e9e-192e1f60f0e9" width="300"> |
 
 ---
