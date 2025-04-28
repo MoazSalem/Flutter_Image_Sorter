@@ -28,7 +28,6 @@ class _PhotoSorterHomeState extends State<MainScreenView> {
             children: [
               const Card(
                 child: ExpansionTile(
-                  initiallyExpanded: true,
                   title: Text(
                     'How it works:',
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),

@@ -81,7 +81,6 @@ class SortCubit extends Cubit<SortState> {
       );
 
       // Once all Images are in the unsorted folder start sorting
-      emit(state.copyWith(currentAction: 'Sorting...'));
       await sortAndMoveImages(
         targetDir: Directory(selectedDirectory),
         unsortedDir: unsortedDir,
@@ -127,16 +126,23 @@ class SortCubit extends Cubit<SortState> {
     // Buffer list to hold all image files with their timestamps
     List<MapEntry<File, DateTime>> timestampedFiles = [];
 
+    emit(state.copyWith(processedFiles: 0));
     for (var file in dir.listSync(followLinks: false)) {
       if (file is File) {
         DateTime? timestampCreationDate;
         DateTime? timestampFilename;
         DateTime? timestamp;
 
+        emit(
+          state.copyWith(currentAction: 'Getting Timestamp from Filename...'),
+        );
         // Get timestamp from filename
         final filename = path.basename(file.path);
         timestampFilename = extractTimestampFromFilename(filename);
 
+        emit(
+          state.copyWith(currentAction: 'Getting Timestamp from File Stats...'),
+        );
         // Get timestamp from file creation date
         timestampCreationDate = await findOldestFileTimestamp(
           file,
@@ -155,11 +161,14 @@ class SortCubit extends Cubit<SortState> {
           timestamp = timestampCreationDate;
         }
 
+        emit(state.copyWith(processedFiles: state.processedFiles + 1));
+
         if (timestamp != null) {
           timestampedFiles.add(MapEntry(file, timestamp));
         }
       }
     }
+    emit(state.copyWith(currentAction: 'Sorting...'));
     // Sort files by timestamp (oldest first)
     timestampedFiles.sort((a, b) => a.value.compareTo(b.value));
     // Extract just the files from the sorted list and return them
