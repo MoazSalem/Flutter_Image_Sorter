@@ -8,6 +8,7 @@ class SortState extends Equatable {
   final int sortedFiles;
   final int unsortedFiles;
   final String currentAction;
+  final bool metadataSearching;
   const SortState({
     required this.selectedDirectory,
     required this.isProcessing,
@@ -16,6 +17,7 @@ class SortState extends Equatable {
     required this.sortedFiles,
     required this.unsortedFiles,
     required this.currentAction,
+    required this.metadataSearching,
   });
 
   SortState copyWith({
@@ -26,6 +28,7 @@ class SortState extends Equatable {
     int? sortedFiles,
     int? unsortedFiles,
     String? currentAction,
+    bool? metadataSearching,
   }) {
     return SortState(
       selectedDirectory: selectedDirectory ?? this.selectedDirectory,
@@ -35,6 +38,7 @@ class SortState extends Equatable {
       sortedFiles: sortedFiles ?? this.sortedFiles,
       unsortedFiles: unsortedFiles ?? this.unsortedFiles,
       currentAction: currentAction ?? this.currentAction,
+      metadataSearching: metadataSearching ?? this.metadataSearching,
     );
   }
 
@@ -47,5 +51,6 @@ class SortState extends Equatable {
     sortedFiles,
     unsortedFiles,
     currentAction,
+    metadataSearching,
   ];
 }

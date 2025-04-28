@@ -1,10 +1,14 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
+import 'package:path/path.dart' as path;
 import 'package:image_sorter/core/consts.dart';
 
 // Finds the oldest timestamp among modification, access, change, and EXIF DateTimeOriginal
-Future<DateTime?> findOldestFileTimestamp(File file) async {
+Future<DateTime?> findOldestFileTimestamp(
+  File file, {
+  required bool metadataSearching,
+}) async {
   final List<DateTime> timestamps = [];
   DateTime? exifDateTime;
 
@@ -38,45 +42,48 @@ Future<DateTime?> findOldestFileTimestamp(File file) async {
 
     // 2. Attempt to Read EXIF DateTimeOriginal
     String fileExtension = file.path.split('.').last.toLowerCase();
-    if ([
-      'jpg',
-      'jpeg',
-      'tif',
-      'tiff',
-      'heic',
-      'heif',
-    ].contains(fileExtension)) {
-      try {
-        final Uint8List fileBytes = await file.readAsBytes();
-        final img.Image? image = img.decodeImage(fileBytes);
+    if (metadataSearching ||
+        path.basename(file.path).split('_').first == 'DSC') {
+      if ([
+        'jpg',
+        'jpeg',
+        'tif',
+        'tiff',
+        'heic',
+        'heif',
+      ].contains(fileExtension)) {
+        try {
+          final Uint8List fileBytes = await file.readAsBytes();
+          final img.Image? image = img.decodeImage(fileBytes);
 
-        if (image != null) {
-          final img.ExifData? exifData = image.exif; // Get the ExifData object
+          if (image != null) {
+            final img.ExifData? exifData =
+                image.exif; // Get the ExifData object
 
-          // Check if exifData is not null AND directly check for the key using containsKey
-          if (exifData != null &&
-              exifData.exifIfd.containsKey(dateTimeOriginalTagId)) {
-            // Access the value directly using the [] operator on exifData
-            final exifValue = exifData.exifIfd[dateTimeOriginalTagId];
-            exifDateTime = _parseExifDateTime(exifValue?.toString());
-            if (exifDateTime != null) {
-              debugPrint(
-                "Found valid EXIF DateTimeOriginal for ${file.path}: $exifDateTime",
-              );
-              // Add valid parsed EXIF date
-              timestamps.add(exifDateTime);
-            } else {
-              debugPrint(
-                "Found EXIF DateTimeOriginal tag but failed to parse value '${exifValue?.toString()}' for ${file.path}",
-              );
+            // Check if exifData is not null AND directly check for the key using containsKey
+            if (exifData != null &&
+                exifData.exifIfd.containsKey(dateTimeOriginalTagId)) {
+              // Access the value directly using the [] operator on exifData
+              final exifValue = exifData.exifIfd[dateTimeOriginalTagId];
+              exifDateTime = _parseExifDateTime(exifValue?.toString());
+              if (exifDateTime != null) {
+                debugPrint(
+                  "Found valid EXIF DateTimeOriginal for ${file.path}: $exifDateTime",
+                );
+                // Add valid parsed EXIF date
+                timestamps.add(exifDateTime);
+              } else {
+                debugPrint(
+                  "Found EXIF DateTimeOriginal tag but failed to parse value '${exifValue?.toString()}' for ${file.path}",
+                );
+              }
             }
           }
+        } catch (e) {
+          debugPrint("Error reading/parsing EXIF for ${file.path}: $e");
         }
-      } catch (e) {
-        debugPrint("Error reading/parsing EXIF for ${file.path}: $e");
       }
     }
-
     // 3. Find the Oldest Timestamp
     if (timestamps.isEmpty) {
       debugPrint(
