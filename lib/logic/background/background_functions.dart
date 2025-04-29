@@ -4,13 +4,12 @@ import 'package:image_sorter/core/consts.dart';
 import 'package:image_sorter/logic/file_date_parser.dart';
 import 'package:image_sorter/logic/file_handling.dart';
 import 'package:image_sorter/logic/file_name_parser.dart';
-import 'package:image_sorter/logic/notification_handling.dart';
 import 'package:path/path.dart' as path;
 
 Future<void> backgroundMoveImagesToUnsorted({
   required String sourceDir,
   required Directory unsortedDir,
-  required ServiceInstance service,
+  required AndroidServiceInstance service,
 }) async {
   final files = Directory(sourceDir).listSync().whereType<File>();
   int index = 0;
@@ -32,11 +31,9 @@ Future<void> backgroundMoveImagesToUnsorted({
       'totalFiles': files.length,
       'processedFiles': ++index,
     });
-    changeNotification(
-      title: 'Sorting',
-      body: 'Moving Images to unsorted: $index / ${files.length}',
-      progress: (index / files.length * 100).toInt(),
-      onGoing: true,
+    service.setForegroundNotificationInfo(
+      title: "Sorting",
+      content: 'Moving Images to unsorted: $index / ${files.length}',
     );
   }
 }
@@ -44,7 +41,7 @@ Future<void> backgroundMoveImagesToUnsorted({
 Future<List<MapEntry<File, DateTime>>> backgroundFindOldestImages({
   required Directory dir,
   required bool metadataSearching,
-  required ServiceInstance service, // Example parameter
+  required AndroidServiceInstance service, // Example parameter
 }) async {
   if (!await dir.exists()) return [];
 
@@ -89,11 +86,9 @@ Future<List<MapEntry<File, DateTime>>> backgroundFindOldestImages({
       }
 
       service.invoke('update', {'processedFiles': ++index});
-      changeNotification(
-        title: 'Sorting',
-        body: 'Getting Timestamps: $index / $totalFiles',
-        progress: (index / totalFiles * 100).toInt(),
-        onGoing: true,
+      service.setForegroundNotificationInfo(
+        title: "Sorting",
+        content: 'Getting Timestamps: $index / $totalFiles',
       );
 
       if (timestamp != null) {
@@ -111,7 +106,7 @@ Future<void> backgroundSortAndMoveImages({
   required Directory unsortedDir,
   required Directory targetDir,
   required bool metadataSearching,
-  required ServiceInstance service, // Example parameter
+  required AndroidServiceInstance service, // Example parameter
 }) async {
   final totalFiles = unsortedDir.listSync().whereType<File>().length;
   // Get sorted list of image files
@@ -134,12 +129,10 @@ Future<void> backgroundSortAndMoveImages({
       'unsortedFiles': totalFiles - (list.length - sortedFiles.length),
       'processedFiles': totalFiles - sortedFiles.length,
     });
-    changeNotification(
-      title: 'Sorting',
-      body:
+    service.setForegroundNotificationInfo(
+      title: "Sorting",
+      content:
           'Moving Processed Images: ${totalFiles - sortedFiles.length} / $totalFiles',
-      progress: ((totalFiles - sortedFiles.length) / totalFiles * 100).toInt(),
-      onGoing: true,
     );
   }
   backgroundHandleUnsortedFiles(unsortedDir: unsortedDir, service: service);
@@ -147,7 +140,7 @@ Future<void> backgroundSortAndMoveImages({
 
 void backgroundHandleUnsortedFiles({
   required Directory unsortedDir,
-  required ServiceInstance service, // Example parameter
+  required AndroidServiceInstance service, // Example parameter
 }) {
   final files = unsortedDir.listSync().whereType<File>();
   if (files.isNotEmpty) {
