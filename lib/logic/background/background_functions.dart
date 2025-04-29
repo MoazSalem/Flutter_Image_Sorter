@@ -121,6 +121,7 @@ Future<void> backgroundSortAndMoveImages({
     final movedFile = await moveFileToDirectory(file, targetDir);
     final entry = sortedFiles.firstWhere((e) => e.key == file);
     await movedFile!.setLastModified(entry.value);
+    await movedFile.setLastAccessed(entry.value);
     sortedFiles.remove(entry);
     service.invoke('update', {
       'sortedFiles': list.length - sortedFiles.length,
