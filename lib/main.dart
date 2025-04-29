@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_sorter/presentation/main_screen.dart';
+import 'logic/background/background_service.dart';
 import 'logic/cubit/sort_cubit.dart';
 
-main() async {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await initializeBackgroundService();
   runApp(const MyApp());
 }
 

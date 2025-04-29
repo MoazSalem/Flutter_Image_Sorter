@@ -11,7 +11,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 part 'sort_state.dart';
 
 class SortCubit extends Cubit<SortState> {
-  late FlutterBackgroundService _backgroundService;
+  final FlutterBackgroundService _backgroundService = service;
 
   SortCubit()
     : super(
@@ -29,8 +29,6 @@ class SortCubit extends Cubit<SortState> {
 
   // Initialize listener only when starting the background service
   Future<void> initializeBackgroundServiceListener() async {
-    _backgroundService = await initializeBackgroundService();
-
     _backgroundService.on('update').listen((event) {
       if (event != null) {
         // Assuming the event map contains state updates
