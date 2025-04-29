@@ -18,6 +18,9 @@ class _PhotoSorterHomeState extends State<MainScreenView> {
     final isProcessing = context.select<SortCubit, bool>(
       (cubit) => cubit.state.isProcessing,
     );
+    final selectedDirectory = context.select<SortCubit, Directory?>(
+      (cubit) => cubit.state.selectedDirectory,
+    );
     return Scaffold(
       appBar: AppBar(title: const Text('Image Sorter')),
       body: Padding(
@@ -84,23 +87,16 @@ class _PhotoSorterHomeState extends State<MainScreenView> {
               const SizedBox(height: 10),
               SizedBox(
                 width: double.infinity,
-                child: BlocSelector<SortCubit, SortState, Directory?>(
-                  selector: (state) {
-                    return state.selectedDirectory;
-                  },
-                  builder: (context, selectedDirectory) {
-                    return FilledButton(
-                      onPressed:
-                          isProcessing
-                              ? null
-                              : context.read<SortCubit>().selectFolder,
-                      child: Text(
-                        selectedDirectory == null
-                            ? 'Select Image Folder'
-                            : 'Selected: ${path.basename(selectedDirectory.path)}',
-                      ),
-                    );
-                  },
+                child: FilledButton(
+                  onPressed:
+                      isProcessing
+                          ? null
+                          : context.read<SortCubit>().selectFolder,
+                  child: Text(
+                    selectedDirectory == null
+                        ? 'Select Image Folder'
+                        : 'Selected: ${path.basename(selectedDirectory.path)}',
+                  ),
                 ),
               ),
               const SizedBox(height: 10),
@@ -108,7 +104,7 @@ class _PhotoSorterHomeState extends State<MainScreenView> {
                 width: double.infinity,
                 child: FilledButton.tonal(
                   onPressed:
-                      cubit.state.selectedDirectory == null
+                      selectedDirectory == null
                           ? () => ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('Please select a directory'),
@@ -119,8 +115,7 @@ class _PhotoSorterHomeState extends State<MainScreenView> {
                           : () => BlocProvider.of<SortCubit>(
                             context,
                           ).startSortProcess(
-                            selectedDirectory:
-                                cubit.state.selectedDirectory!.path,
+                            selectedDirectory: selectedDirectory.path,
                             metadataSearching: cubit.state.metadataSearching,
                           ),
                   child: const Text('Start Processing'),
