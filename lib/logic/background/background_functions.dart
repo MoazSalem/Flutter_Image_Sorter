@@ -118,10 +118,9 @@ Future<void> backgroundSortAndMoveImages({
   service.invoke('update', {'currentAction': 'Moving Processed Images...'});
   // Process each file in order
   for (var file in list) {
-    final movedFile = await moveFileToDirectory(file, targetDir);
     final entry = sortedFiles.firstWhere((e) => e.key == file);
-    await movedFile!.setLastModified(entry.value);
-    await movedFile.setLastAccessed(entry.value);
+    await file.setLastModified(entry.value);
+    await file.setLastAccessed(entry.value);
     sortedFiles.remove(entry);
     service.invoke('update', {
       'sortedFiles': list.length - sortedFiles.length,
@@ -131,7 +130,7 @@ Future<void> backgroundSortAndMoveImages({
     service.setForegroundNotificationInfo(
       title: "Sorting",
       content:
-          'Moving Processed Images: ${totalFiles - sortedFiles.length} / $totalFiles',
+          'Processing Images: ${totalFiles - sortedFiles.length} / $totalFiles',
     );
   }
   backgroundHandleUnsortedFiles(
