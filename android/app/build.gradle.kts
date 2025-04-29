@@ -30,7 +30,7 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
+        jvmTarget = "11"
     }
 
     defaultConfig {
@@ -67,4 +67,6 @@ dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
     implementation("androidx.window:window:1.0.0")
     implementation("androidx.window:window-java:1.0.0")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.1.20")
+    implementation("androidx.exifinterface:exifinterface:1.4.1")
 }

@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:image_sorter/core/consts.dart';
+import 'package:image_sorter/core/exif_modifier.dart';
 import 'package:image_sorter/logic/file_date_parser.dart';
 import 'package:image_sorter/logic/file_handling.dart';
 import 'package:image_sorter/logic/file_name_parser.dart';
@@ -121,6 +122,7 @@ Future<void> backgroundSortAndMoveImages({
     final entry = sortedFiles.firstWhere((e) => e.key == file);
     await file.setLastModified(entry.value);
     await file.setLastAccessed(entry.value);
+    //await updateImageTimestamp(file, entry.value);
     sortedFiles.remove(entry);
     service.invoke('update', {
       'sortedFiles': list.length - sortedFiles.length,
