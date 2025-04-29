@@ -6,35 +6,26 @@ import 'package:image_sorter/logic/file_handling.dart';
 import 'package:image_sorter/logic/file_name_parser.dart';
 import 'package:path/path.dart' as path;
 
-Future<void> backgroundMoveImagesToUnsorted({
-  required String sourceDir,
+Future<void> backgroundMoveImageToUnsorted({
   required Directory unsortedDir,
   required AndroidServiceInstance service,
+  required File file,
 }) async {
-  final files = Directory(sourceDir).listSync().whereType<File>();
-  int index = 0;
-
-  // Move each image file to the unsorted directory
-  for (final file in files) {
-    final ext = path.extension(file.path).toLowerCase();
-    if (imageExtensions.contains(ext) || commonVideoExtensions.contains(ext)) {
-      final newPath = path.join(unsortedDir.path, path.basename(file.path));
-      try {
-        await file.rename(newPath);
-      } catch (e) {
-        service.invoke('debug', {
-          "debugMessage": "Failed to move ${file.path}: $e",
-        });
-      }
+  // Create unsorted folder if it doesn't exist
+  if (!await unsortedDir.exists()) {
+    await unsortedDir.create();
+  }
+  // Move image file to the unsorted directory
+  final ext = path.extension(file.path).toLowerCase();
+  if (imageExtensions.contains(ext) || commonVideoExtensions.contains(ext)) {
+    final newPath = path.join(unsortedDir.path, path.basename(file.path));
+    try {
+      await file.rename(newPath);
+    } catch (e) {
+      service.invoke('debug', {
+        "debugMessage": "Failed to move ${file.path}: $e",
+      });
     }
-    service.invoke('update', {
-      'totalFiles': files.length,
-      'processedFiles': ++index,
-    });
-    service.setForegroundNotificationInfo(
-      title: "Sorting",
-      content: 'Moving Images to unsorted: $index / ${files.length}',
-    );
   }
 }
 
@@ -93,6 +84,13 @@ Future<List<MapEntry<File, DateTime>>> backgroundFindOldestImages({
 
       if (timestamp != null) {
         timestampedFiles.add(MapEntry(file, timestamp));
+      } else {
+        // If no timestamp found, Move image file to the unsorted directory
+        await backgroundMoveImageToUnsorted(
+          unsortedDir: Directory(path.join(dir.path, 'unsorted')),
+          service: service,
+          file: file,
+        );
       }
     }
   }
@@ -103,15 +101,15 @@ Future<List<MapEntry<File, DateTime>>> backgroundFindOldestImages({
 }
 
 Future<void> backgroundSortAndMoveImages({
-  required Directory unsortedDir,
   required Directory targetDir,
   required bool metadataSearching,
   required AndroidServiceInstance service, // Example parameter
 }) async {
-  final totalFiles = unsortedDir.listSync().whereType<File>().length;
+  final totalFiles = targetDir.listSync().whereType<File>().length;
+  service.invoke('update', {'totalFiles': totalFiles});
   // Get sorted list of image files
   final sortedFiles = await backgroundFindOldestImages(
-    dir: unsortedDir,
+    dir: targetDir,
     metadataSearching: metadataSearching,
     service: service,
   );
@@ -135,18 +133,25 @@ Future<void> backgroundSortAndMoveImages({
           'Moving Processed Images: ${totalFiles - sortedFiles.length} / $totalFiles',
     );
   }
-  backgroundHandleUnsortedFiles(unsortedDir: unsortedDir, service: service);
+  backgroundHandleUnsortedFiles(
+    unsortedDir: Directory(path.join(targetDir.path, 'unsorted')),
+    service: service,
+  );
 }
 
-void backgroundHandleUnsortedFiles({
+Future<void> backgroundHandleUnsortedFiles({
   required Directory unsortedDir,
   required AndroidServiceInstance service, // Example parameter
-}) {
-  final files = unsortedDir.listSync().whereType<File>();
-  if (files.isNotEmpty) {
-    service.invoke('update', {'unsortedFiles': files.length});
-  } else {
-    service.invoke('update', {'currentAction': 'Deleting Unsorted Folder...'});
-    unsortedDir.delete(); // Ensure service has permissions
+}) async {
+  if (await unsortedDir.exists()) {
+    final files = unsortedDir.listSync().whereType<File>();
+    if (files.isNotEmpty) {
+      service.invoke('update', {'unsortedFiles': files.length});
+    } else {
+      service.invoke('update', {
+        'currentAction': 'Deleting Unsorted Folder...',
+      });
+      unsortedDir.delete(); // Ensure service has permissions
+    }
   }
 }

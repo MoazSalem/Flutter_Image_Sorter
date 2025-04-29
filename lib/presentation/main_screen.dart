@@ -45,18 +45,15 @@ class _PhotoSorterHomeState extends State<MainScreenView> {
                   shape: Border(),
                   expandedCrossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('1. Select a folder containing images'),
                     Text(
-                      '2. All images will be moved to an "unsorted" subfolder',
+                      '1.You Select a folder containing images and start Processing.',
                     ),
                     Text(
-                      '3. Images will be sorted by date from creation date or file name',
+                      '2. Get Images timestamp from file name or files stats and sort them in order of oldest to newest.',
                     ),
+                    Text('3. Set files dates to the oldest timestamp found.'),
                     Text(
-                      '4. Sorted images will be moved back to the original folder',
-                    ),
-                    Text(
-                      '5. Unsortable images will remain in the "unsorted" folder',
+                      '4. Images with no timestamp will be moved to unsorted folder.',
                     ),
                   ],
                 ),

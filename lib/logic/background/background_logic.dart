@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'dart:ui';
 import 'package:flutter_background_service/flutter_background_service.dart';
-import 'package:path/path.dart' as path;
 import 'background_functions.dart';
 
 @pragma('vm:entry-point')
@@ -14,12 +13,9 @@ void onStart(ServiceInstance service) async {
       final String selectedDirectory = event!['selectedDirectory'];
       final bool metadataSearching = event['metadataSearching'];
       final Directory targetDir = Directory(selectedDirectory);
-      final Directory unsortedDir = Directory(
-        path.join(selectedDirectory, 'unsorted'),
-      );
 
       try {
-        // 1. Update Status & Notification
+        // Update Status & Notification
         service.invoke('update', {
           'currentAction': 'Preparing...',
           'totalFiles': 0,
@@ -31,35 +27,14 @@ void onStart(ServiceInstance service) async {
             content: "Preparing...",
           );
         }
-
-        // 2. Create unsorted folder
-        if (!await unsortedDir.exists()) {
-          await unsortedDir.create();
-        }
-
-        // 3. Move images to unsorted
-        service.invoke('update', {
-          'currentAction': 'Moving Images to unsorted...',
-        });
-        service.setForegroundNotificationInfo(
-          title: "Sorting",
-          content: "Moving Images to unsorted...",
-        );
-        await backgroundMoveImagesToUnsorted(
-          sourceDir: selectedDirectory,
-          unsortedDir: unsortedDir,
-          service: service,
-        );
-
-        // 4. Sort and move images
+        // Sort and move images
         await backgroundSortAndMoveImages(
           targetDir: targetDir,
-          unsortedDir: unsortedDir,
           metadataSearching: metadataSearching,
           service: service,
         );
 
-        // 5. Finalization
+        // Finalization
         service.setForegroundNotificationInfo(
           title: "Sorting",
           content: "Sorting Process Finished",
