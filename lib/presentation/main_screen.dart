@@ -66,6 +66,7 @@ class _PhotoSorterHomeState extends State<MainScreenView> {
                 builder: (context, state) {
                   return Card(
                     child: CheckboxListTile(
+                      enabled: !isProcessing,
                       value: state,
                       onChanged: (v) => cubit.setMetadata(!state),
                       title: Text(
@@ -107,31 +108,28 @@ class _PhotoSorterHomeState extends State<MainScreenView> {
                 width: double.infinity,
                 child: FilledButton.tonal(
                   onPressed:
-                      () =>
-                          cubit.state.selectedDirectory == null
-                              ? ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Please select a directory'),
-                                ),
-                              )
-                              : isProcessing
-                              ? null
-                              : BlocProvider.of<SortCubit>(
-                                context,
-                              ).startSortProcess(
-                                selectedDirectory:
-                                    cubit.state.selectedDirectory!.path,
-                                metadataSearching:
-                                    cubit.state.metadataSearching,
-                              ),
+                      cubit.state.selectedDirectory == null
+                          ? () => ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Please select a directory'),
+                            ),
+                          )
+                          : isProcessing
+                          ? null
+                          : () => BlocProvider.of<SortCubit>(
+                            context,
+                          ).startSortProcess(
+                            selectedDirectory:
+                                cubit.state.selectedDirectory!.path,
+                            metadataSearching: cubit.state.metadataSearching,
+                          ),
                   child: const Text('Start Processing'),
                 ),
               ),
               const SizedBox(height: 20),
-              if (isProcessing || cubit.state.currentAction.isNotEmpty)
-                BlocBuilder<SortCubit, SortState>(
-                  buildWhen: (previous, current) => isProcessing,
-                  builder: (context, state) {
+              BlocBuilder<SortCubit, SortState>(
+                builder: (context, state) {
+                  if (isProcessing || cubit.state.currentAction.isNotEmpty) {
                     return Column(
                       children: [
                         Card(
@@ -181,8 +179,11 @@ class _PhotoSorterHomeState extends State<MainScreenView> {
                         const SizedBox(height: 20),
                       ],
                     );
-                  },
-                ),
+                  } else {
+                    return Container();
+                  }
+                },
+              ),
             ],
           ),
         ),
