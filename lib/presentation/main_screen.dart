@@ -16,6 +16,7 @@ class MainScreenView extends StatelessWidget {
   Widget build(BuildContext context) {
     final state = context.watch<SortCubit>().state;
     final cubit = context.read<SortCubit>();
+    final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
       appBar: AppBar(
@@ -25,7 +26,7 @@ class MainScreenView extends StatelessWidget {
             left: AppSizes.tinyPadding,
             right: AppSizes.tinyPadding,
           ),
-          child: const Text(
+          child: Text(
             AppStrings.appName,
             style: TextStyle(
               fontWeight: FontWeight.w600,
@@ -33,12 +34,12 @@ class MainScreenView extends StatelessWidget {
             ),
           ),
         ),
-        toolbarHeight: AppSizes.appBarSize,
+        toolbarHeight: screenHeight * 0.14,
       ),
       bottomNavigationBar: Padding(
         padding: EdgeInsets.symmetric(horizontal: AppSizes.padding),
         child: SizedBox(
-          height: AppSizes.appBarSize,
+          height: screenHeight * 0.16,
           child: ActionButtons(
             selectedDirectory: state.selectedDirectory,
             isProcessing: state.isProcessing,

@@ -5,7 +5,6 @@ class AppSizes {
   static const double tinyPadding = 6;
   static const double sizedBox = 10;
   static const double appTitle = 40;
-  static const double appBarSize = 160;
   static const double cardPadding = 16;
   static const double fontSize1 = 16;
   static const double fontSize2 = 15;
