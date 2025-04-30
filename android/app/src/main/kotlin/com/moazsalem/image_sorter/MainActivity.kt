@@ -63,9 +63,6 @@ class MainActivity: FlutterActivity() {
                                 exifInterface.saveAttributes()
                                 success = true
 
-                                // After successful save, trigger Media Scanner
-                                triggerMediaScan(filePath)
-
                             } catch (e: IOException) {
                                 // Log the error (consider a more robust logging mechanism)
                                 Log.e(
@@ -169,9 +166,15 @@ class MainActivity: FlutterActivity() {
                     }
                 }
                 "triggerMediaScan" -> {
-                    // Extract arguments sent from Dart
                     val filePath = call.argument<String>("filePath")
-                    triggerMediaScan(filePath!!)
+                    if (filePath == null) {
+                        result.error("INVALID_ARGUMENTS", "File path is null for media scan.", null)
+                    } else {
+                        Thread {
+                            val scanSuccess = triggerMediaScan(filePath)
+                            activity.runOnUiThread { result.success(scanSuccess) }
+                        }.start()
+                    }
                 }
                 else -> {
                     result.notImplemented()
@@ -182,19 +185,22 @@ class MainActivity: FlutterActivity() {
     }
 
     // Helper function to notify the Media Scanner about the file change
-    private fun triggerMediaScan(filePath: String) {
-        try {
+    private fun triggerMediaScan(filePath: String): Boolean {
+        return try {
             val file = File(filePath)
             if (file.exists()) {
                 val intent = Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE)
                 intent.data = Uri.fromFile(file)
-                sendBroadcast(intent)
-                Log.d("NativeHelper", "Media Scanner triggered for: $filePath")
+                context.sendBroadcast(intent)
+                Log.d("NativeHelper", "Media Scanner broadcast sent for: $filePath")
+                true
             } else {
                 Log.w("NativeHelper", "File not found for Media Scanner: $filePath")
+                false
             }
         } catch (e: Exception) {
             Log.e("NativeHelper", "Error triggering Media Scanner for $filePath: ${e.message}")
+            false
         }
     }
 }

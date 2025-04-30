@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:image_sorter/core/consts.dart';
+import 'package:image_sorter/core/native_helper.dart';
 import 'package:image_sorter/logic/file_date_parser.dart';
 import 'package:image_sorter/logic/file_name_parser.dart';
 import 'package:image_sorter/logic/permissions_handling.dart';
@@ -51,11 +52,13 @@ class SortCubit extends Cubit<SortState> {
 
   // Main Function
   startSortingProcess({
-    required String selectedDirectory,
+    required Directory selectedDirectory,
     bool metadataSearching = false,
   }) async {
-    final totalFiles =
-        Directory(selectedDirectory).listSync().whereType<File>().length;
+    // Check for Storage Permissions
+    final granted = await requestAllStoragePermissions();
+    // Check if folder is empty
+    final totalFiles = selectedDirectory.listSync().whereType<File>().length;
     if (totalFiles == 0) {
       emit(state.copyWith(currentAction: 'No Files Found in Folder'));
       return;
@@ -74,13 +77,11 @@ class SortCubit extends Cubit<SortState> {
         unsortedFiles: 0,
       ),
     );
-    // Check for Storage Permissions
-    final granted = await requestAllStoragePermissions();
 
     if (granted) {
       // Sort and move images
       await sortAndMoveImages(
-        targetDir: Directory(selectedDirectory),
+        targetDir: selectedDirectory,
         metadataSearching: metadataSearching,
       );
     }
@@ -104,13 +105,19 @@ class SortCubit extends Cubit<SortState> {
       sortedFiles.map((entry) => entry.key).toList(),
     );
 
-    emit(state.copyWith(currentAction: 'Processing Images...'));
+    emit(
+      state.copyWith(
+        currentAction: 'Processing Images...',
+        processedFiles: 0,
+        sortedFiles: 0,
+        unsortedFiles: 0,
+      ),
+    );
 
     // Process each file in order
     for (var file in list) {
       final entry = sortedFiles.firstWhere((e) => e.key == file);
-      await file.setLastModified(entry.value);
-      await file.setLastAccessed(entry.value);
+      await updateImageTimestamp(file, entry.value);
       sortedFiles.remove(entry);
       emit(
         state.copyWith(
@@ -220,5 +227,36 @@ class SortCubit extends Cubit<SortState> {
         unsortedDir.delete();
       }
     }
+  }
+
+  Future<void> updateImageTimestamp(
+    File imageFile,
+    DateTime oldestTimestamp,
+  ) async {
+    bool exifSuccess = await NativeHelper.setExifDateTimeAndroid(
+      imageFile.path,
+      oldestTimestamp,
+    );
+
+    if (exifSuccess) {
+      debugPrint("Successfully updated EXIF timestamps for ${imageFile.path}");
+      try {
+        await imageFile.setLastModified(oldestTimestamp);
+        debugPrint(
+          "Successfully updated filesystem timestamp for ${imageFile.path}",
+        );
+      } catch (e) {
+        debugPrint("Failed to set filesystem timestamp: $e");
+      }
+      try {
+        await NativeHelper.triggerMediaScanAndroid(imageFile.path);
+        debugPrint("Successfully triggered media scan for ${imageFile.path}");
+      } catch (e) {
+        debugPrint("Failed to trigger media scan: $e");
+      }
+    } else {
+      debugPrint("Failed to update EXIF timestamps for ${imageFile.path}");
+    }
+    return;
   }
 }
