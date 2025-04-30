@@ -5,7 +5,6 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:image_sorter/core/consts.dart';
 import 'package:image_sorter/core/native_helper.dart';
-import 'package:image_sorter/logic/file_date_parser.dart';
 import 'package:image_sorter/logic/file_name_parser.dart';
 import 'package:image_sorter/logic/permissions_handling.dart';
 import 'package:path/path.dart' as path;
@@ -24,13 +23,8 @@ class SortCubit extends Cubit<SortState> {
           sortedFiles: 0,
           unsortedFiles: 0,
           currentAction: '',
-          metadataSearching: false,
         ),
       );
-
-  setMetadata(bool value) {
-    emit(state.copyWith(metadataSearching: value));
-  }
 
   Future<void> selectFolder() async {
     String? selectedDir = await FilePicker.platform.getDirectoryPath();
@@ -148,7 +142,7 @@ class SortCubit extends Cubit<SortState> {
       final ext = path.extension(file.path);
       if (imageExtensions.contains(ext) ||
           commonVideoExtensions.contains(ext)) {
-        DateTime? timestampCreationDate;
+        DateTime? timestampFileStats;
         DateTime? timestampFilename;
         DateTime? timestamp;
 
@@ -162,17 +156,11 @@ class SortCubit extends Cubit<SortState> {
         emit(
           state.copyWith(currentAction: 'Getting Timestamp from File Stats...'),
         );
-        // Get timestamp from file creation date
-        timestampCreationDate = await findOldestFileTimestamp(
-          file,
-          metadataSearching: metadataSearching,
-        );
+        // Get timestamp from files stats
+        timestampFileStats = await findOldestTimestamp(file);
 
         // Compare timestamps and use the oldest
-        timestamp = chooseBestTimestamp(
-          timestampCreationDate,
-          timestampFilename,
-        );
+        timestamp = chooseBestTimestamp(timestampFileStats, timestampFilename);
 
         emit(state.copyWith(processedFiles: state.processedFiles + 1));
 
@@ -211,6 +199,18 @@ class SortCubit extends Cubit<SortState> {
     }
   }
 
+  handleUnsortedFiles({required Directory unsortedDir}) async {
+    if (await unsortedDir.exists()) {
+      final files = unsortedDir.listSync().whereType<File>();
+      if (files.isNotEmpty) {
+        emit(state.copyWith(unsortedFiles: files.length));
+      } else {
+        emit(state.copyWith(currentAction: 'Deleting Unsorted Folder...'));
+        unsortedDir.delete();
+      }
+    }
+  }
+
   DateTime? chooseBestTimestamp(DateTime? a, DateTime? b) {
     if (a == null) return b;
     if (b == null) return a;
@@ -228,46 +228,55 @@ class SortCubit extends Cubit<SortState> {
     return a.isBefore(b) ? a : b;
   }
 
-  handleUnsortedFiles({required Directory unsortedDir}) async {
-    if (await unsortedDir.exists()) {
-      final files = unsortedDir.listSync().whereType<File>();
-      if (files.isNotEmpty) {
-        emit(state.copyWith(unsortedFiles: files.length));
-      } else {
-        emit(state.copyWith(currentAction: 'Deleting Unsorted Folder...'));
-        unsortedDir.delete();
-      }
+  Future<DateTime?> findOldestTimestamp(File file) async {
+    List<DateTime> timestampsExif =
+        await NativeHelper.getExifTimestampsNativelyAndroid(file.path);
+    List<DateTime?> timestampsFs =
+        await NativeHelper.getFileSystemTimestampsAndroid(file.path);
+    if (timestampsExif.isNotEmpty) {
+      timestampsExif.reduce(
+        (value, element) => value.isBefore(element) ? value : element,
+      );
+    } else if (timestampsFs.isNotEmpty) {
+      final earliest = timestampsFs.whereType<DateTime>().toList()..sort();
+      timestampsFs = earliest;
     }
+    final oldestTimestamp =
+        timestampsExif.isNotEmpty
+            ? timestampsExif.first
+            : timestampsFs.isNotEmpty
+            ? timestampsFs.first
+            : null;
+    return oldestTimestamp;
   }
 
   Future<void> updateImageTimestamp(
     File imageFile,
     DateTime oldestTimestamp,
   ) async {
-    bool exifSuccess = await NativeHelper.setExifDateTimeAndroid(
-      imageFile.path,
-      oldestTimestamp,
-    );
-
-    if (exifSuccess) {
-      debugPrint("Successfully updated EXIF timestamps for ${imageFile.path}");
-      try {
-        await imageFile.setLastModified(oldestTimestamp);
-        debugPrint(
-          "Successfully updated filesystem timestamp for ${imageFile.path}",
-        );
-      } catch (e) {
-        debugPrint("Failed to set filesystem timestamp: $e");
-      }
-      try {
-        await NativeHelper.triggerMediaScanAndroid(imageFile.path);
-        debugPrint("Successfully triggered media scan for ${imageFile.path}");
-      } catch (e) {
-        debugPrint("Failed to trigger media scan: $e");
-      }
-    } else {
-      debugPrint("Failed to update EXIF timestamps for ${imageFile.path}");
+    try {
+      await imageFile.setLastModified(oldestTimestamp);
+      debugPrint(
+        "Successfully updated filesystem timestamp for ${imageFile.path}",
+      );
+    } catch (e) {
+      debugPrint("Failed to set filesystem timestamp: $e");
     }
-    return;
+    try {
+      await NativeHelper.triggerMediaScanAndroid(imageFile.path);
+      debugPrint("Successfully triggered media scan for ${imageFile.path}");
+    } catch (e) {
+      debugPrint("Failed to trigger media scan: $e");
+    }
+
+    // bool exifSuccess = await NativeHelper.setExifDateTimeAndroid(
+    //   imageFile.path,
+    //   oldestTimestamp,
+    // );
+    // if (exifSuccess) {
+    //   debugPrint("Successfully updated EXIF timestamps for ${imageFile.path}");
+    // } else {
+    //   debugPrint("Failed to update EXIF timestamps for ${imageFile.path}");
+    // }
   }
 }

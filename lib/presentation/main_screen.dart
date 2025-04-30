@@ -31,6 +31,7 @@ class _PhotoSorterHomeState extends State<MainScreenView> {
             children: [
               const Card(
                 child: ExpansionTile(
+                  initiallyExpanded: true,
                   title: Text(
                     'How it works:',
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
@@ -60,29 +61,6 @@ class _PhotoSorterHomeState extends State<MainScreenView> {
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 10),
-              BlocSelector<SortCubit, SortState, bool>(
-                selector: (state) {
-                  return state.metadataSearching;
-                },
-                builder: (context, state) {
-                  return Card(
-                    child: CheckboxListTile(
-                      enabled: !isProcessing,
-                      value: state,
-                      onChanged: (v) => cubit.setMetadata(!state),
-                      title: Text(
-                        "Metadata Searching",
-                        style: TextStyle(fontSize: 16),
-                      ),
-                      subtitle: Text(
-                        "It's much slower, Most likely would only affect photos taken by camera, Although It's very accurate, but with milliseconds difference to normal sorting method, use if images has no date in name and taken by professional camera, used by default for photos that start with DSC_",
-                        style: TextStyle(fontSize: 11),
-                      ),
-                    ),
-                  );
-                },
               ),
               const SizedBox(height: 10),
               SizedBox(
@@ -116,7 +94,6 @@ class _PhotoSorterHomeState extends State<MainScreenView> {
                             context,
                           ).startSortingProcess(
                             selectedDirectory: selectedDirectory,
-                            metadataSearching: cubit.state.metadataSearching,
                           ),
                   child: const Text('Start Processing'),
                 ),

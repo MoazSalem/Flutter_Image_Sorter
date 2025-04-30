@@ -10,29 +10,29 @@ class NativeHelper {
   );
 
   /// Gets Filesystem Timestamps Natively.
-  static Future<FileTimestamps?> getFileSystemTimestampsAndroid(
+  static Future<List<DateTime?>> getFileSystemTimestampsAndroid(
     String filePath,
   ) async {
-    if (!Platform.isAndroid) return null;
+    if (!Platform.isAndroid) return [];
     try {
       final Map<dynamic, dynamic>? result = await _channel
           .invokeMethod<Map<dynamic, dynamic>>('getFileSystemTimestamps', {
             'filePath': filePath,
           });
-      if (result == null) return null;
+      if (result == null) return [];
       DateTime? dateTimeFromMillis(int? millis) =>
           (millis == null || millis <= 0)
               ? null
               : DateTime.fromMillisecondsSinceEpoch(millis);
-      return FileTimestamps(
-        modified: dateTimeFromMillis(result['modified'] as int?),
-        accessed: dateTimeFromMillis(result['accessed'] as int?),
-        changed: dateTimeFromMillis(result['changed'] as int?),
-        created: dateTimeFromMillis(result['created'] as int?),
-      );
+      return [
+        dateTimeFromMillis(result['modified'] as int?),
+        dateTimeFromMillis(result['accessed'] as int?),
+        dateTimeFromMillis(result['changed'] as int?),
+        dateTimeFromMillis(result['created'] as int?),
+      ];
     } catch (e) {
       print("Error getting native FS timestamps: $e");
-      return null;
+      return [];
     }
   }
 
@@ -182,20 +182,6 @@ class NativeHelper {
       return false;
     }
   }
-}
-
-// Helper class for filesystem timestamps
-class FileTimestamps {
-  final DateTime? modified;
-  final DateTime? accessed;
-  final DateTime? changed;
-  final DateTime? created;
-  FileTimestamps({this.modified, this.accessed, this.changed, this.created});
-  bool get hasAnyTimestamp =>
-      modified != null ||
-      accessed != null ||
-      changed != null ||
-      created != null;
 }
 
 // Helper function to parse EXIF date string (Your existing implementation)

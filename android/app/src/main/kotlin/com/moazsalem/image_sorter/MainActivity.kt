@@ -142,8 +142,6 @@ class MainActivity: FlutterActivity() {
                                 exifTimestamps["dateTimeDigitized"] = exifInterface.getAttribute(ExifInterface.TAG_DATETIME_DIGITIZED)
                                 exifTimestamps["dateTime"] = exifInterface.getAttribute(ExifInterface.TAG_DATETIME)
 
-                                Log.d("NativeExif", "Retrieved EXIF timestamps for $filePath: $exifTimestamps")
-
                             } catch (e: IOException) {
                                 errorMsg = "IOException reading EXIF data for $filePath: ${e.message}"
                                 Log.e("NativeExif", errorMsg)
@@ -192,7 +190,6 @@ class MainActivity: FlutterActivity() {
                 val intent = Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE)
                 intent.data = Uri.fromFile(file)
                 context.sendBroadcast(intent)
-                Log.d("NativeHelper", "Media Scanner broadcast sent for: $filePath")
                 true
             } else {
                 Log.w("NativeHelper", "File not found for Media Scanner: $filePath")
