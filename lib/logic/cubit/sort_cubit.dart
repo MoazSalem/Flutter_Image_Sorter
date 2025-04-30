@@ -54,6 +54,12 @@ class SortCubit extends Cubit<SortState> {
     required String selectedDirectory,
     bool metadataSearching = false,
   }) async {
+    final totalFiles =
+        Directory(selectedDirectory).listSync().whereType<File>().length;
+    if (totalFiles == 0) {
+      emit(state.copyWith(currentAction: 'No Files Found in Folder'));
+      return;
+    }
     // Keep Screen On While Processing
     WakelockPlus.enable();
     // Start Processing
@@ -62,7 +68,7 @@ class SortCubit extends Cubit<SortState> {
         isProcessing: true,
         currentAction: 'Asking for Permissions...',
         // Reset counts for the new process
-        totalFiles: 0,
+        totalFiles: totalFiles,
         processedFiles: 0,
         sortedFiles: 0,
         unsortedFiles: 0,
@@ -88,9 +94,6 @@ class SortCubit extends Cubit<SortState> {
     required Directory targetDir,
     required bool metadataSearching,
   }) async {
-    emit(
-      state.copyWith(totalFiles: targetDir.listSync().whereType<File>().length),
-    );
     // Get sorted list of image files
     final sortedFiles = await findOldestImages(
       dir: targetDir,
@@ -134,56 +137,52 @@ class SortCubit extends Cubit<SortState> {
     List<MapEntry<File, DateTime>> timestampedFiles = [];
 
     emit(state.copyWith(processedFiles: 0));
-    for (var file in dir.listSync(followLinks: false)) {
+    for (var file in dir.listSync(followLinks: false).whereType<File>()) {
       final ext = path.extension(file.path);
       if (imageExtensions.contains(ext) ||
           commonVideoExtensions.contains(ext)) {
-        if (file is File) {
-          DateTime? timestampCreationDate;
-          DateTime? timestampFilename;
-          DateTime? timestamp;
+        DateTime? timestampCreationDate;
+        DateTime? timestampFilename;
+        DateTime? timestamp;
 
-          emit(
-            state.copyWith(currentAction: 'Getting Timestamp from Filename...'),
+        emit(
+          state.copyWith(currentAction: 'Getting Timestamp from Filename...'),
+        );
+        // Get timestamp from filename
+        final filename = path.basename(file.path);
+        timestampFilename = extractTimestampFromFilename(filename);
+
+        emit(
+          state.copyWith(currentAction: 'Getting Timestamp from File Stats...'),
+        );
+        // Get timestamp from file creation date
+        timestampCreationDate = await findOldestFileTimestamp(
+          file,
+          metadataSearching: metadataSearching,
+        );
+
+        // Compare timestamps and use the oldest
+        if (timestampFilename != null && timestampCreationDate != null) {
+          timestamp =
+              timestampFilename.isBefore(timestampCreationDate)
+                  ? timestampFilename
+                  : timestampCreationDate;
+        } else if (timestampFilename != null) {
+          timestamp = timestampFilename;
+        } else if (timestampCreationDate != null) {
+          timestamp = timestampCreationDate;
+        }
+
+        emit(state.copyWith(processedFiles: state.processedFiles + 1));
+
+        if (timestamp != null) {
+          timestampedFiles.add(MapEntry(file, timestamp));
+        } else {
+          // If no timestamp found, Move image file to the unsorted directory
+          await moveImageToUnsorted(
+            file: file,
+            unsortedDir: Directory(path.join(dir.path, 'unsorted')),
           );
-          // Get timestamp from filename
-          final filename = path.basename(file.path);
-          timestampFilename = extractTimestampFromFilename(filename);
-
-          emit(
-            state.copyWith(
-              currentAction: 'Getting Timestamp from File Stats...',
-            ),
-          );
-          // Get timestamp from file creation date
-          timestampCreationDate = await findOldestFileTimestamp(
-            file,
-            metadataSearching: metadataSearching,
-          );
-
-          // Compare timestamps and use the oldest
-          if (timestampFilename != null && timestampCreationDate != null) {
-            timestamp =
-                timestampFilename.isBefore(timestampCreationDate)
-                    ? timestampFilename
-                    : timestampCreationDate;
-          } else if (timestampFilename != null) {
-            timestamp = timestampFilename;
-          } else if (timestampCreationDate != null) {
-            timestamp = timestampCreationDate;
-          }
-
-          emit(state.copyWith(processedFiles: state.processedFiles + 1));
-
-          if (timestamp != null) {
-            timestampedFiles.add(MapEntry(file, timestamp));
-          } else {
-            // If no timestamp found, Move image file to the unsorted directory
-            await moveImageToUnsorted(
-              file: file,
-              unsortedDir: Directory(path.join(dir.path, 'unsorted')),
-            );
-          }
         }
       }
     }

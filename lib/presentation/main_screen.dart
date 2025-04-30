@@ -132,24 +132,31 @@ class _PhotoSorterHomeState extends State<MainScreenView> {
                             padding: const EdgeInsets.all(16.0),
                             child: Column(
                               children: [
-                                Text(
-                                  cubit.state.currentAction,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
+                                Center(
+                                  child: Text(
+                                    cubit.state.currentAction,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
-                                const SizedBox(height: 10),
-                                LinearProgressIndicator(
-                                  value:
-                                      cubit.state.totalFiles > 0
-                                          ? cubit.state.processedFiles /
-                                              cubit.state.totalFiles
-                                          : 0,
-                                ),
-                                const SizedBox(height: 10),
-                                Text(
-                                  '${cubit.state.processedFiles} / ${cubit.state.totalFiles} files',
-                                ),
+                                if (cubit.state.totalFiles > 0)
+                                  Column(
+                                    children: [
+                                      const SizedBox(height: 10),
+                                      LinearProgressIndicator(
+                                        value:
+                                            cubit.state.totalFiles > 0
+                                                ? cubit.state.processedFiles /
+                                                    cubit.state.totalFiles
+                                                : 0,
+                                      ),
+                                      const SizedBox(height: 10),
+                                      Text(
+                                        '${cubit.state.processedFiles} / ${cubit.state.totalFiles} files',
+                                      ),
+                                    ],
+                                  ),
                               ],
                             ),
                           ),
