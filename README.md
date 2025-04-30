@@ -4,7 +4,7 @@ An Android app built with Flutter to rescue your photos with messed-up dates and
 
 Messed-up your photos when backing them up? no worries.
 
-<p align="center"> <img src="https://github.com/user-attachments/assets/0c57409f-a0b0-456b-a348-1b6474fc5496" width="200"> &nbsp; &nbsp;   <img src="https://github.com/user-attachments/assets/a8181cec-093a-4d40-9631-e285799f4d42" width="200"> </p>
+<p align="center"> <img src="https://github.com/user-attachments/assets/897d6d63-97c3-43d1-a165-55bdf23f9622" width="200"> &nbsp; &nbsp;   <img src="https://github.com/user-attachments/assets/1d1ff61c-9892-48d7-a245-f7bb07479409" width="200"> </p>
 
 ✨ If you like the project, don't forget to **star** the repo! ✨
 
@@ -12,19 +12,22 @@ Messed-up your photos when backing them up? no worries.
 
 ## Features 🔥
 
-- 🚀 Handles sorting in a separate background **isolate** with notifications.
-- 🕰️ Automatically finds the **Oldest Timestamp** from the file name or metadata.
-- 🛠️ Fixes the file's **Last Modified Date** to match the correct timestamp.
-- 🎨 Sleek **Material 3** UI.
+- 🚀 Handles modifing with native kotlin code.
+- 🕰️ Automatically finds the **Oldest Timestamp** by extracting it from File Name or Metadata.
+- ❇️ Supports most Image and Video file extinsions.
+- 🛠️ Fixes the file's **Timestamps** to match the correct timestamp.
+- 🎨 Sleek Black & White **Material 3** UI.
 - ⚡ Smooth and fast thanks to **Bloc** state management.
 
 ---
 
 ## Screenshots 📸
 
-|                                                                                                         |                                                                                                         |
+|                                        Light Mode                                                       |                                                 Dark Mode                                               |
 |:-------------------------------------------------------------------------------------------------------:|:-------------------------------------------------------------------------------------------------------:|
-| <img src="https://github.com/user-attachments/assets/be2728e1-9bdb-48c2-95f9-cdde40436e1f" width="300"> | <img src="https://github.com/user-attachments/assets/ede65bfd-592f-4632-9e9e-192e1f60f0e9" width="300"> |
+| <img src="https://github.com/user-attachments/assets/331fbd22-be52-47cd-b008-dc10722c28d2" width="300"> | <img src="https://github.com/user-attachments/assets/c56dbdc2-b5f0-4544-bf28-9db429eb62ec" width="300"> |
+| <img src="https://github.com/user-attachments/assets/d9194b19-0912-449e-a96a-fb2f06d8f133" width="300"> | <img src="https://github.com/user-attachments/assets/a380ec4b-0dfe-464c-8934-de6762547528" width="300"> |
+
 
 ---
 
