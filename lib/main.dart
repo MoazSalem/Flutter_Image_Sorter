@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_sorter/core/strings.dart';
 import 'package:image_sorter/presentation/main_screen.dart';
+import 'core/theme.dart';
 import 'logic/cubit/sort_cubit.dart';
 
 void main() async {
@@ -13,12 +15,16 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Image Sorter',
+      title: AppStrings.appName,
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         brightness: MediaQuery.of(context).platformBrightness,
-        colorSchemeSeed: Colors.blue,
+        colorScheme:
+            MediaQuery.of(context).platformBrightness == Brightness.dark
+                ? AppTheme.darkColorScheme
+                : AppTheme.lightColorScheme,
         useMaterial3: true,
+        fontFamily: AppStrings.fontFamily,
       ),
       home: BlocProvider<SortCubit>(
         create: (BuildContext context) => SortCubit(),

@@ -5,6 +5,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:image_sorter/core/consts.dart';
 import 'package:image_sorter/core/native_helper.dart';
+import 'package:image_sorter/core/strings.dart';
 import 'package:image_sorter/logic/file_name_parser.dart';
 import 'package:image_sorter/logic/permissions_handling.dart';
 import 'package:path/path.dart' as path;
@@ -54,7 +55,7 @@ class SortCubit extends Cubit<SortState> {
     // Check if folder is empty
     final totalFiles = selectedDirectory.listSync().whereType<File>().length;
     if (totalFiles == 0) {
-      emit(state.copyWith(currentAction: 'No Files Found in Folder'));
+      emit(state.copyWith(currentAction: AppStrings.noFilesFound));
       return;
     }
     // Keep Screen On While Processing
@@ -63,7 +64,7 @@ class SortCubit extends Cubit<SortState> {
     emit(
       state.copyWith(
         isProcessing: true,
-        currentAction: 'Asking for Permissions...',
+        currentAction: AppStrings.askingForPermissions,
         // Reset counts for the new process
         totalFiles: totalFiles,
         processedFiles: 0,
@@ -79,7 +80,9 @@ class SortCubit extends Cubit<SortState> {
         metadataSearching: metadataSearching,
       );
     }
-    emit(state.copyWith(isProcessing: false, currentAction: 'Finished !'));
+    emit(
+      state.copyWith(isProcessing: false, currentAction: AppStrings.finished),
+    );
     // Disable Screen On After Processing
     WakelockPlus.disable();
   }
@@ -101,7 +104,7 @@ class SortCubit extends Cubit<SortState> {
 
     emit(
       state.copyWith(
-        currentAction: 'Processing Images...',
+        currentAction: AppStrings.processing,
         processedFiles: 0,
         sortedFiles: 0,
         unsortedFiles: 0,
@@ -146,16 +149,12 @@ class SortCubit extends Cubit<SortState> {
         DateTime? timestampFilename;
         DateTime? timestamp;
 
-        emit(
-          state.copyWith(currentAction: 'Getting Timestamp from Filename...'),
-        );
+        emit(state.copyWith(currentAction: AppStrings.gettingTimestamp));
         // Get timestamp from filename
         final filename = path.basename(file.path);
         timestampFilename = extractTimestampFromFilename(filename);
 
-        emit(
-          state.copyWith(currentAction: 'Getting Timestamp from File Stats...'),
-        );
+        emit(state.copyWith(currentAction: AppStrings.gettingFileStats));
         // Get timestamp from files stats
         timestampFileStats = await findOldestTimestamp(file);
 
@@ -175,7 +174,7 @@ class SortCubit extends Cubit<SortState> {
         }
       }
     }
-    emit(state.copyWith(currentAction: 'Sorting...'));
+    emit(state.copyWith(currentAction: AppStrings.sorting));
     // Sort files by timestamp (oldest first)
     timestampedFiles.sort((a, b) => a.value.compareTo(b.value));
     // Extract just the files from the sorted list and return them
@@ -205,7 +204,7 @@ class SortCubit extends Cubit<SortState> {
       if (files.isNotEmpty) {
         emit(state.copyWith(unsortedFiles: files.length));
       } else {
-        emit(state.copyWith(currentAction: 'Deleting Unsorted Folder...'));
+        emit(state.copyWith(currentAction: AppStrings.deletingUnsorted));
         unsortedDir.delete();
       }
     }
