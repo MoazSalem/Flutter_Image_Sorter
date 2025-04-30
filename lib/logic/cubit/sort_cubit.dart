@@ -46,10 +46,7 @@ class SortCubit extends Cubit<SortState> {
   }
 
   // Main Function
-  startSortingProcess({
-    required Directory selectedDirectory,
-    bool metadataSearching = false,
-  }) async {
+  startSortingProcess({required Directory selectedDirectory}) async {
     // Check for Storage Permissions
     final granted = await requestAllStoragePermissions();
     // Check if folder is empty
@@ -75,10 +72,7 @@ class SortCubit extends Cubit<SortState> {
 
     if (granted) {
       // Sort and move images
-      await sortAndMoveImages(
-        targetDir: selectedDirectory,
-        metadataSearching: metadataSearching,
-      );
+      await sortAndMoveImages(targetDir: selectedDirectory);
     }
     emit(
       state.copyWith(isProcessing: false, currentAction: AppStrings.finished),
@@ -88,15 +82,9 @@ class SortCubit extends Cubit<SortState> {
   }
 
   // Combine findOldestImages and moveFileToDirectory functions to sort and move images
-  Future<void> sortAndMoveImages({
-    required Directory targetDir,
-    required bool metadataSearching,
-  }) async {
+  Future<void> sortAndMoveImages({required Directory targetDir}) async {
     // Get sorted list of image files
-    final sortedFiles = await findOldestImages(
-      dir: targetDir,
-      metadataSearching: metadataSearching,
-    );
+    final sortedFiles = await findOldestImages(dir: targetDir);
     // Another list to avoid problems with removing files from the list in the for loop
     final list = List<File>.from(
       sortedFiles.map((entry) => entry.key).toList(),
@@ -133,7 +121,6 @@ class SortCubit extends Cubit<SortState> {
   // Function to find oldest images and sort them in order of oldest to newest
   Future<List<MapEntry<File, DateTime>>> findOldestImages({
     required Directory dir,
-    required bool metadataSearching,
   }) async {
     if (!await dir.exists()) return [];
 
@@ -142,7 +129,7 @@ class SortCubit extends Cubit<SortState> {
 
     emit(state.copyWith(processedFiles: 0));
     for (var file in dir.listSync(followLinks: false).whereType<File>()) {
-      final ext = path.extension(file.path);
+      final ext = path.extension(file.path).toLowerCase();
       if (imageExtensions.contains(ext) ||
           commonVideoExtensions.contains(ext)) {
         DateTime? timestampFileStats;
