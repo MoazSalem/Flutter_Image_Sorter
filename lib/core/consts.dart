@@ -32,5 +32,6 @@ const List<String> commonVideoExtensions = [
   '.hevc',
 ];
 
-// EXIF Tag ID for DateTimeOriginal (0x9003)
-const int dateTimeOriginalTagId = 36867;
+const int dateTimeOriginalTagId = 0x9003;
+const int dateTimeDigitizedTagId = 0x9004;
+const int dateTimeTagId = 0x0132;
