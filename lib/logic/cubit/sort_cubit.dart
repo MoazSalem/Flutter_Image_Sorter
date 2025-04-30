@@ -169,16 +169,10 @@ class SortCubit extends Cubit<SortState> {
         );
 
         // Compare timestamps and use the oldest
-        if (timestampFilename != null && timestampCreationDate != null) {
-          timestamp =
-              timestampFilename.isBefore(timestampCreationDate)
-                  ? timestampFilename
-                  : timestampCreationDate;
-        } else if (timestampFilename != null) {
-          timestamp = timestampFilename;
-        } else if (timestampCreationDate != null) {
-          timestamp = timestampCreationDate;
-        }
+        timestamp = chooseBestTimestamp(
+          timestampCreationDate,
+          timestampFilename,
+        );
 
         emit(state.copyWith(processedFiles: state.processedFiles + 1));
 
@@ -215,6 +209,23 @@ class SortCubit extends Cubit<SortState> {
     } catch (e) {
       debugPrint('Failed to move ${file.path}: $e');
     }
+  }
+
+  DateTime? chooseBestTimestamp(DateTime? a, DateTime? b) {
+    if (a == null) return b;
+    if (b == null) return a;
+
+    // Both same date?
+    if (a.year == b.year && a.month == b.month && a.day == b.day) {
+      final aHasTime = a.hour != 0 || a.minute != 0 || a.second != 0;
+      final bHasTime = b.hour != 0 || b.minute != 0 || b.second != 0;
+
+      if (aHasTime && !bHasTime) return a;
+      if (bHasTime && !aHasTime) return b;
+    }
+
+    // Fall back to earlier of the two
+    return a.isBefore(b) ? a : b;
   }
 
   handleUnsortedFiles({required Directory unsortedDir}) async {
