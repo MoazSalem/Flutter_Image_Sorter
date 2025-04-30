@@ -94,6 +94,62 @@ class MainActivity: FlutterActivity() {
                         }.start() // Start the background thread
                     }
                 }
+                "setLastModifiedTime" -> {
+                    // Extract arguments
+                    val filePath = call.argument<String>("filePath")
+                    // Get time as Long (milliseconds since epoch)
+                    val timeMillis = call.argument<Long>("timeMillis")
+
+                    if (filePath == null || timeMillis == null) {
+                        result.error(
+                            "INVALID_ARGUMENTS",
+                            "File path or timeMillis is null for setLastModifiedTime.",
+                            null
+                        )
+                    } else {
+                        // Perform file operation in a background thread
+                        Thread {
+                            var success = false
+                            var errorMsg: String? = null
+                            try {
+                                val file = File(filePath)
+                                if (file.exists()) {
+                                    // Attempt to set the last modified time
+                                    success = file.setLastModified(timeMillis)
+                                    if (!success) {
+                                        errorMsg = "setLastModified returned false for $filePath (check permissions?)"
+                                        Log.w("NativeTimestampSet", errorMsg)
+                                    }
+                                } else {
+                                    errorMsg = "File not found: $filePath"
+                                    Log.w("NativeTimestampSet", errorMsg)
+                                }
+                            } catch (e: SecurityException) {
+                                errorMsg = "SecurityException setting last modified time for $filePath: ${e.message}"
+                                Log.e("NativeTimestampSet", errorMsg)
+                            } catch (e: Exception) {
+                                errorMsg = "Error setting last modified time for $filePath: ${e.message}"
+                                Log.e("NativeTimestampSet", errorMsg)
+                            }
+
+                            // Send result back to Flutter on the main thread
+                            activity.runOnUiThread {
+                                if (success) {
+                                    result.success(true)
+                                } else {
+                                    // Provide a more specific error if available
+                                    result.error(
+                                        "NATIVE_SET_MODIFIED_ERROR",
+                                        errorMsg ?: "Failed to set last modified time.",
+                                        null
+                                    )
+                                    // Alternatively, just return false: result.success(false)
+                                    // Returning an error is often more informative.
+                                }
+                            }
+                        }.start() // Start the background thread
+                    }
+                }
                 "getFileSystemTimestamps" -> {
                     val filePath = call.argument<String>("filePath")
                     if (filePath == null) {

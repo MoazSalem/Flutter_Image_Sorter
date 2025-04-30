@@ -255,7 +255,19 @@ class SortCubit extends Cubit<SortState> {
     DateTime oldestTimestamp,
   ) async {
     try {
-      await imageFile.setLastModified(oldestTimestamp);
+      await NativeHelper.setExifDateTimeAndroid(
+        imageFile.path,
+        oldestTimestamp,
+      );
+      debugPrint("Successfully updated EXIF timestamp for ${imageFile.path}");
+    } catch (e) {
+      debugPrint("Failed to set EXIF timestamp: $e");
+    }
+    try {
+      await NativeHelper.setLastModifiedTimeAndroid(
+        imageFile.path,
+        oldestTimestamp,
+      );
       debugPrint(
         "Successfully updated filesystem timestamp for ${imageFile.path}",
       );
@@ -268,15 +280,5 @@ class SortCubit extends Cubit<SortState> {
     } catch (e) {
       debugPrint("Failed to trigger media scan: $e");
     }
-
-    // bool exifSuccess = await NativeHelper.setExifDateTimeAndroid(
-    //   imageFile.path,
-    //   oldestTimestamp,
-    // );
-    // if (exifSuccess) {
-    //   debugPrint("Successfully updated EXIF timestamps for ${imageFile.path}");
-    // } else {
-    //   debugPrint("Failed to update EXIF timestamps for ${imageFile.path}");
-    // }
   }
 }

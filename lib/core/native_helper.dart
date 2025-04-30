@@ -155,6 +155,53 @@ class NativeHelper {
     }
   }
 
+  static Future<bool> setLastModifiedTimeAndroid(
+    String filePath,
+    DateTime dateTime,
+  ) async {
+    // Platform check
+    if (!Platform.isAndroid) {
+      debugPrint(
+        "Setting last modified time natively is only supported on Android.",
+      );
+      return false;
+    }
+
+    try {
+      // Convert DateTime to milliseconds since epoch for the native side
+      final int timeMillis = dateTime.millisecondsSinceEpoch;
+
+      // Invoke the method on the native side
+      final bool? result = await _channel.invokeMethod<bool>(
+        'setLastModifiedTime', // Must match the handler key in MainActivity.kt
+        <String, dynamic>{
+          'filePath': filePath,
+          'timeMillis': timeMillis, // Pass time as milliseconds
+        },
+      );
+
+      if (result == true) {
+        print("Successfully set last modified time for $filePath");
+      } else {
+        print("Failed to set last modified time for $filePath");
+      }
+      // Return the result from native code, default to false if null
+      return result ?? false;
+    } on PlatformException catch (e) {
+      // Handle errors coming from the native side
+      debugPrint(
+        "Failed to set last modified time via platform channel: '${e.message}'. Code: ${e.code}. Details: ${e.details}",
+      );
+      return false;
+    } catch (e) {
+      // Handle any other potential errors during the call
+      debugPrint(
+        "An unexpected error occurred calling setLastModifiedTime: $e",
+      );
+      return false;
+    }
+  }
+
   static Future<bool> triggerMediaScanAndroid(String filePath) async {
     // Platform check - only proceed for Android
     if (!Platform.isAndroid) {
