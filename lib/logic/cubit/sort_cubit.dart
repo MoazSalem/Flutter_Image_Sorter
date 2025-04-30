@@ -229,25 +229,25 @@ class SortCubit extends Cubit<SortState> {
   }
 
   Future<DateTime?> findOldestTimestamp(File file) async {
-    List<DateTime> timestampsExif =
-        await NativeHelper.getExifTimestampsNativelyAndroid(file.path);
+    final timestampsExif = await NativeHelper.getExifTimestampsNativelyAndroid(
+      file.path,
+    );
     List<DateTime?> timestampsFs =
         await NativeHelper.getFileSystemTimestampsAndroid(file.path);
+
+    // Handle EXIF timestamps
     if (timestampsExif.isNotEmpty) {
-      timestampsExif.reduce(
-        (value, element) => value.isBefore(element) ? value : element,
-      );
-    } else if (timestampsFs.isNotEmpty) {
-      final earliest = timestampsFs.whereType<DateTime>().toList()..sort();
-      timestampsFs = earliest;
+      return timestampsExif.reduce((a, b) => a.isBefore(b) ? a : b);
     }
-    final oldestTimestamp =
-        timestampsExif.isNotEmpty
-            ? timestampsExif.first
-            : timestampsFs.isNotEmpty
-            ? timestampsFs.first
-            : null;
-    return oldestTimestamp;
+
+    // Handle file system timestamps
+    final uniqueTimestamps = Set<DateTime>.from(timestampsFs);
+    if (uniqueTimestamps.length > 1) {
+      timestampsFs.sort();
+    } else {
+      timestampsFs.clear();
+    }
+    return timestampsFs.isNotEmpty ? timestampsFs.first : null;
   }
 
   Future<void> updateImageTimestamp(
