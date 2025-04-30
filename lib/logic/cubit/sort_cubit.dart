@@ -1,18 +1,18 @@
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
-import 'package:image_sorter/logic/background/background_service.dart';
+import 'package:image_sorter/core/consts.dart';
+import 'package:image_sorter/logic/file_date_parser.dart';
+import 'package:image_sorter/logic/file_name_parser.dart';
 import 'package:image_sorter/logic/permissions_handling.dart';
+import 'package:path/path.dart' as path;
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 part 'sort_state.dart';
 
 class SortCubit extends Cubit<SortState> {
-  final FlutterBackgroundService _backgroundService = service;
-
   SortCubit()
     : super(
         SortState(
@@ -26,45 +26,6 @@ class SortCubit extends Cubit<SortState> {
           metadataSearching: false,
         ),
       );
-
-  // Initialize listener only when starting the background service
-  Future<void> initializeBackgroundServiceListener() async {
-    _backgroundService.on('update').listen((event) {
-      if (event != null) {
-        // Assuming the event map contains state updates
-        emit(
-          state.copyWith(
-            isProcessing: event['isProcessing'] ?? state.isProcessing,
-            totalFiles: event['totalFiles'] ?? state.totalFiles,
-            processedFiles: event['processedFiles'] ?? state.processedFiles,
-            sortedFiles: event['sortedFiles'] ?? state.sortedFiles,
-            unsortedFiles: event['unsortedFiles'] ?? state.unsortedFiles,
-            currentAction: event['currentAction'] ?? state.currentAction,
-          ),
-        );
-      }
-    });
-
-    _backgroundService.on('finished').listen((event) {
-      emit(state.copyWith(isProcessing: false, currentAction: 'Finished !'));
-      WakelockPlus.disable();
-    });
-
-    _backgroundService.on('error').listen((event) {
-      // Handle errors reported by the background service
-      emit(
-        state.copyWith(
-          isProcessing: false,
-          currentAction: 'Error: ${event?['message']}',
-        ),
-      );
-      WakelockPlus.disable();
-    });
-
-    _backgroundService.on('debug').listen((event) {
-      debugPrint(event!['debugMessage']);
-    });
-  }
 
   setMetadata(bool value) {
     emit(state.copyWith(metadataSearching: value));
@@ -88,18 +49,14 @@ class SortCubit extends Cubit<SortState> {
     }
   }
 
-  // Main Function using Background Service
-  Future<void> startSortProcess({
+  // Main Function
+  startSortingProcess({
     required String selectedDirectory,
     bool metadataSearching = false,
   }) async {
-    // Start listening for service updates
-    await initializeBackgroundServiceListener();
-
     // Keep Screen On While Processing
     WakelockPlus.enable();
-
-    // Update state to indicate processing start
+    // Start Processing
     emit(
       state.copyWith(
         isProcessing: true,
@@ -111,34 +68,158 @@ class SortCubit extends Cubit<SortState> {
         unsortedFiles: 0,
       ),
     );
-
     // Check for Storage Permissions
     final granted = await requestAllStoragePermissions();
 
     if (granted) {
-      emit(state.copyWith(currentAction: 'Starting background process...'));
-      // Start the service only when permissions are granted
-      await _backgroundService.startService();
-      _backgroundService.invoke('startSort', {
-        'selectedDirectory': selectedDirectory,
-        'metadataSearching': metadataSearching,
-      });
-    } else {
-      // Handle permission denial
+      // Sort and move images
+      await sortAndMoveImages(
+        targetDir: Directory(selectedDirectory),
+        metadataSearching: metadataSearching,
+      );
+    }
+    emit(state.copyWith(isProcessing: false, currentAction: 'Finished !'));
+    // Disable Screen On After Processing
+    WakelockPlus.disable();
+  }
+
+  // Combine findOldestImages and moveFileToDirectory functions to sort and move images
+  Future<void> sortAndMoveImages({
+    required Directory targetDir,
+    required bool metadataSearching,
+  }) async {
+    emit(
+      state.copyWith(totalFiles: targetDir.listSync().whereType<File>().length),
+    );
+    // Get sorted list of image files
+    final sortedFiles = await findOldestImages(
+      dir: targetDir,
+      metadataSearching: metadataSearching,
+    );
+    // Another list to avoid problems with removing files from the list in the for loop
+    final list = List<File>.from(
+      sortedFiles.map((entry) => entry.key).toList(),
+    );
+
+    emit(state.copyWith(currentAction: 'Processing Images...'));
+
+    // Process each file in order
+    for (var file in list) {
+      final entry = sortedFiles.firstWhere((e) => e.key == file);
+      await file.setLastModified(entry.value);
+      await file.setLastAccessed(entry.value);
+      sortedFiles.remove(entry);
       emit(
         state.copyWith(
-          isProcessing: false,
-          currentAction: 'Storage permissions denied.',
+          sortedFiles: list.length - sortedFiles.length,
+          unsortedFiles: state.totalFiles - (list.length - sortedFiles.length),
+          processedFiles: state.totalFiles - sortedFiles.length,
         ),
       );
-      WakelockPlus.disable();
+    }
+    // Handle unsorted files
+    await handleUnsortedFiles(
+      unsortedDir: Directory(path.join(targetDir.path, 'unsorted')),
+    );
+  }
+
+  // Function to find oldest images and sort them in order of oldest to newest
+  Future<List<MapEntry<File, DateTime>>> findOldestImages({
+    required Directory dir,
+    required bool metadataSearching,
+  }) async {
+    if (!await dir.exists()) return [];
+
+    // Buffer list to hold all image files with their timestamps
+    List<MapEntry<File, DateTime>> timestampedFiles = [];
+
+    emit(state.copyWith(processedFiles: 0));
+    for (var file in dir.listSync(followLinks: false)) {
+      final ext = path.extension(file.path);
+      if (imageExtensions.contains(ext) ||
+          commonVideoExtensions.contains(ext)) {
+        if (file is File) {
+          DateTime? timestampCreationDate;
+          DateTime? timestampFilename;
+          DateTime? timestamp;
+
+          emit(
+            state.copyWith(currentAction: 'Getting Timestamp from Filename...'),
+          );
+          // Get timestamp from filename
+          final filename = path.basename(file.path);
+          timestampFilename = extractTimestampFromFilename(filename);
+
+          emit(
+            state.copyWith(
+              currentAction: 'Getting Timestamp from File Stats...',
+            ),
+          );
+          // Get timestamp from file creation date
+          timestampCreationDate = await findOldestFileTimestamp(
+            file,
+            metadataSearching: metadataSearching,
+          );
+
+          // Compare timestamps and use the oldest
+          if (timestampFilename != null && timestampCreationDate != null) {
+            timestamp =
+                timestampFilename.isBefore(timestampCreationDate)
+                    ? timestampFilename
+                    : timestampCreationDate;
+          } else if (timestampFilename != null) {
+            timestamp = timestampFilename;
+          } else if (timestampCreationDate != null) {
+            timestamp = timestampCreationDate;
+          }
+
+          emit(state.copyWith(processedFiles: state.processedFiles + 1));
+
+          if (timestamp != null) {
+            timestampedFiles.add(MapEntry(file, timestamp));
+          } else {
+            // If no timestamp found, Move image file to the unsorted directory
+            await moveImageToUnsorted(
+              file: file,
+              unsortedDir: Directory(path.join(dir.path, 'unsorted')),
+            );
+          }
+        }
+      }
+    }
+    emit(state.copyWith(currentAction: 'Sorting...'));
+    // Sort files by timestamp (oldest first)
+    timestampedFiles.sort((a, b) => a.value.compareTo(b.value));
+    // Extract just the files from the sorted list and return them
+    return timestampedFiles;
+  }
+
+  Future<void> moveImageToUnsorted({
+    required File file,
+    required Directory unsortedDir,
+  }) async {
+    // Create unsorted folder if it doesn't exist
+    if (!await unsortedDir.exists()) {
+      await unsortedDir.create();
+    }
+    // Move image file to the unsorted directory
+    final newPath = path.join(unsortedDir.path, path.basename(file.path));
+    try {
+      await file.rename(newPath);
+    } catch (e) {
+      debugPrint('Failed to move ${file.path}: $e');
     }
   }
 
-  @override
-  Future<void> close() {
-    // Clean up listeners or background service connections
-    WakelockPlus.disable();
-    return super.close();
+  handleUnsortedFiles({required Directory unsortedDir}) async {
+    if (await unsortedDir.exists()) {
+      final files = unsortedDir.listSync().whereType<File>();
+      if (files.isNotEmpty) {
+        emit(state.copyWith(unsortedFiles: files.length));
+      } else {
+        emit(state.copyWith(currentAction: 'Deleting Unsorted Folder...'));
+        unsortedDir.delete();
+      }
+    }
   }
 }

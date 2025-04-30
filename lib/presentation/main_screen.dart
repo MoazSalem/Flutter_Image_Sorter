@@ -114,7 +114,7 @@ class _PhotoSorterHomeState extends State<MainScreenView> {
                           ? null
                           : () => BlocProvider.of<SortCubit>(
                             context,
-                          ).startSortProcess(
+                          ).startSortingProcess(
                             selectedDirectory: selectedDirectory.path,
                             metadataSearching: cubit.state.metadataSearching,
                           ),

@@ -8,11 +8,6 @@ Future<bool> requestAllStoragePermissions() async {
   // For Android 13+ (API 33+): request specific media permissions
   if (Platform.isAndroid) {
     await Permission.storage.status;
-    // Request Notification Permission
-    if (await Permission.notification.isDenied) {
-      await Permission.notification.request();
-    }
-
     // Optional: Request access to manage external storage (Android 11+)
     if (await Permission.manageExternalStorage.isDenied) {
       final result = await Permission.manageExternalStorage.request();
