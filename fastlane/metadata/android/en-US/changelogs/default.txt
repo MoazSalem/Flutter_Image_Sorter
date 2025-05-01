@@ -1,0 +1,9 @@
+Image Sorter is an Android application made using flutter, designed to restore and organize the modified dates of your images and videos. By extracting timestamps from filenames or embedded metadata, it ensures your media files are chronologically accurate, enhancing your gallery's organization and retrieval efficiency.​
+
+Key Features:
+
+- Accurate Timestamp Restoration: Utilizes filenames and metadata to correct modified dates of images and videos.​
+
+- User-Friendly Interface: Intuitive design for seamless navigation and operation.​
+
+- Batch Processing: Efficiently handles multiple files simultaneously, saving time and effort.​

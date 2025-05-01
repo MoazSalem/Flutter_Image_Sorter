@@ -1,0 +1,5 @@
+- Enhanced timestamp extraction from metadata by doing it natively.
+- Enhanced timestamp setting by doing it natively.
+- Enforce media scanner after editing image timestamps.
+- Improved batch processing performance for large media collections.
+- Fixed timestamp parsing errors when comparing times.
